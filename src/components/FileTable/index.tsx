@@ -92,7 +92,7 @@ const mkHeader = ({navigateTo, responsiveValue}: HeaderProps) => {
               ? <div style={{width: "content-min"}}>
                 <Truncate title={row.contentSize} maxWidth="200px">{row.contentSize}</Truncate >
               </div>
-              : <small>unknown</small>
+              : null
           )
         },
       },
@@ -101,20 +101,7 @@ const mkHeader = ({navigateTo, responsiveValue}: HeaderProps) => {
         width: 'auto',
         minWidth: '50px',
         align: 'end',
-        header: () => (
-            <div
-              style={{
-                clipPath: 'inset(50%)',
-                height: '1px',
-                overflow: 'hidden',
-                position: 'absolute',
-                whiteSpace: 'nowrap',
-                width: '1px',
-              }}
-            >
-              download
-            </div>
-        ),
+        header: 'Download',
         renderCell: (row: TreeNode) => {
           return (
             row.sha256 
@@ -127,7 +114,7 @@ const mkHeader = ({navigateTo, responsiveValue}: HeaderProps) => {
                 icon={Icons.DownloadIcon}
                 variant="invisible"
               />
-              : <small>unavailable</small>
+              : null
           )
         },
       }
