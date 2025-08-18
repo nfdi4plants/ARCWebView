@@ -338,7 +338,7 @@ export default function WebViewer({ jsonString, readmefetch, licensefetch }: Web
     const fileIdExportMetadataMap = new Map<string, ARCExportMetadata>();
     files.forEach(file => {
       const id = file.id;
-      const sha = file.TryGetProperty('http://schema.org/sha256', g.TryGetContext() as any);
+      const sha = file.TryGetProperty('http://schema.org/sha256', g.TryGetContext() as any) || file.TryGetProperty('https://schema.org/sha256', g.TryGetContext() as any);
       if (id && sha) {
         const contentSize = file.TryGetProperty("contentSize");
         fileIdExportMetadataMap.set(id, { sha256: sha, contentSize: contentSize ? formatFileSize(contentSize) : undefined });
