@@ -4,7 +4,7 @@ An Annotated Research Context web viewer in the style of GitHub's Primer Product
 
 Displays basic information about an ARC ([Annotated Research Context](https://arc-rdm.org/)) and allows to navigate through its structure.
 
-👀 check out the [demo](https://freymaurer.github.io/ARCWebView/)
+👀 check out the [demo](https://nfdi4plants.github.io/ARCWebView/)
 
 # Install
 
