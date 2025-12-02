@@ -1,7 +1,6 @@
 import WebViewer from './components/WebViewer';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import {Banner, Blankslate} from '@primer/react/experimental'
-import Icons from './components/Icons';
 import { FileCacheProvider, SearchCacheProvider } from './ContextProvider';
 import { marked } from 'marked';
 import {Button, Stack} from '@primer/react'

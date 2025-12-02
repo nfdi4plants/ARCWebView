@@ -11,9 +11,9 @@ declare global {
   }
 }
 
-function isPlugin() {
-  return !!window.arcwebview && !!window.arcwebview.getROCJson;
-}
+// function isPlugin() {
+//   return !!window.arcwebview && !!window.arcwebview.getROCJson;
+// }
 
 /// add getROCJson to to test plugin mode
 // window.arcwebview = {
