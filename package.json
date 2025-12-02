@@ -42,6 +42,7 @@
     "start": "npm run dev",
     "dev": "vite --config vite.config.app.ts",
     "build": "tsc -b && vite build --config vite.config.app.ts",
+    "build:docker": "tsc -b && vite build --config vite.config.docker.js",
     "lint": "eslint .",
     "preview": "vite preview --config vite.config.app.ts",
     "build:lib": "tsc -b && vite build --config vite.config.lib.ts"
