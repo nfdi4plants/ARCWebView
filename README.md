@@ -42,6 +42,15 @@ Find more information below:
 - Components: https://primer.style/product/components/
 - Responsive: https://github.com/primer/css/blob/b5e009778ec01b6e983cba6cbf89cebfdc5a4124/docs/content/support/breakpoints.md#media-query-mixins
 
+## Requirements
+
+- installed NodeJS (v20 or higher)
+
+## Run locally
+
+1. Install dependencies `npm install` (once per setup)
+2. Start development server `npm start`
+
 ## Publish components
 
 1. Apply changes
