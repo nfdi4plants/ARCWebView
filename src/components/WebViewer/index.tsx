@@ -13,6 +13,7 @@ import StudyMetadata from '../Metadata/StudyMetadata'
 import ARCMetadata from '../Metadata/ARCMetadata'
 import FileTree from '../FileTree'
 import Icons from '../Icons'
+import {XCircleIcon} from '@primer/octicons-react'
 
 function pathsToFileTree(paths: string[], exportMetadataMap: Map<string, ARCExportMetadata>) {
   const root: TreeNode = { name: "root", id: "", type: "folder", children: [] };
@@ -278,6 +279,7 @@ interface WebViewerProps {
   jsonString: string;
   readmefetch?: () => Promise<string>;
   licensefetch?: () => Promise<string>;
+  clearJsonCallback?: () => void;
 }
 
 function formatFileSize(input: string): string {
@@ -304,7 +306,7 @@ interface ARCExportMetadata {
   contentSize: string | undefined;
 }
 
-export default function WebViewer({ jsonString, readmefetch, licensefetch }: WebViewerProps) {
+export default function WebViewer({ jsonString, readmefetch, licensefetch, clearJsonCallback }: WebViewerProps) {
 
   const [arc, setArc] = useState<ARC | null>(null)
   const [tree, setTree] = useState<TreeNode | null>(null)
@@ -384,12 +386,15 @@ export default function WebViewer({ jsonString, readmefetch, licensefetch }: Web
       <SplitPageLayout.Content>
         <Stack>
           <div className="bgColor-default py-2 position-sticky top-0 z-1 d-flex flex-items-start">
-            <Stack className="flex-column flex-sm-row flex-items-start flex-sm-items-center" >
+            <Stack className="flex-column flex-sm-row flex-items-start flex-sm-items-center" style={{width: "100%"}}>
               <div className="d-flex flex-row" style={{ gap: "0.5rem" }}>
                 <IconButton aria-label="Expand sidebar" variant='invisible' icon={sidebarActive ? Icons.SidebarCollapseIcon : Icons.SidebarExpandIcon} onClick={() => setSidebarActive(!sidebarActive)} />
                 <TreeSearch navigateTo={navigateTo} />
               </div>
               {currentTreeNode && arc && arc.Title && <FileBreadcrumbs currentTreeNode={currentTreeNode} navigateTo={navigateTo} title={arc.Title} />}
+              {clearJsonCallback &&
+                <IconButton style={{ marginLeft: "auto" }} aria-label="Clear loaded JSON and upload new" variant='danger' icon={XCircleIcon} onClick={() => clearJsonCallback()} />
+              }
             </Stack>
           </div>
           {

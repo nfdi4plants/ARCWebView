@@ -11,16 +11,6 @@ declare global {
   }
 }
 
-const loadExmpReadme = async () => {
-  const readme = await import('./assets/README.md?raw');
-  return readme.default;
-}
-
-const loadExmpJson = async () => {
-  const json = await import('./assets/arc-ro-crate-metadata.json?raw');
-  return json.default;
-}
-
 function isPlugin() {
   return !!window.arcwebview && !!window.arcwebview.getROCJson;
 }
@@ -40,7 +30,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
       <BaseStyles>
-        <App jsonString={isPlugin() ? undefined : loadExmpJson} readmefetch={isPlugin() ? undefined : loadExmpReadme} />
+        <App />
         {/* <App /> */}
       </BaseStyles>
     </ThemeProvider>
