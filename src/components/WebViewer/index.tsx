@@ -311,6 +311,7 @@ export default function WebViewer({ jsonString, readmefetch, licensefetch, clear
 
   const [arc, setArc] = useState<ARC | null>(null)
   const [tree, setTree] = useState<TreeNode | null>(null)
+  const [graph, setGraph] = useState<any>(null);
   const [currentTreeNode, setCurrentTreeNode] = useState<TreeNode | null>(null)
   const [loading, setLoading] = useState(true)
   const {setCache} = useSearchCacheContext()
@@ -335,13 +336,14 @@ export default function WebViewer({ jsonString, readmefetch, licensefetch, clear
   useEffect(() => {
     // This is just to simulate a data fetch, in a real application you would fetch this
     // data from an API or some other source.
-    const g = JsonController.LDGraph.fromROCrateJsonString(jsonString);
+    const graphObj = JsonController.LDGraph.fromROCrateJsonString(jsonString);
+    setGraph(graphObj);
     const arc = JsonController.ARC.fromROCrateJsonString(jsonString);
-    const files = g.Nodes.filter(n => ROCrate.LDFile.validate(n, g.TryGetContext() as any));
+    const files = graphObj.Nodes.filter(n => ROCrate.LDFile.validate(n, graphObj.TryGetContext() as any));
     const fileIdExportMetadataMap = new Map<string, ARCExportMetadata>();
     files.forEach(file => {
       const id = file.id;
-      const sha = file.TryGetProperty('http://schema.org/sha256', g.TryGetContext() as any) || file.TryGetProperty('https://schema.org/sha256', g.TryGetContext() as any);
+      const sha = file.TryGetProperty('http://schema.org/sha256', graphObj.TryGetContext() as any) || file.TryGetProperty('https://schema.org/sha256', graphObj.TryGetContext() as any);
       if (id && sha) {
         const contentSize = file.TryGetProperty("contentSize");
         fileIdExportMetadataMap.set(id, { sha256: sha, contentSize: contentSize ? formatFileSize(contentSize) : undefined });
@@ -385,7 +387,7 @@ export default function WebViewer({ jsonString, readmefetch, licensefetch, clear
         {renderedTree}
       </SplitPageLayout.Pane>
       <SplitPageLayout.Content>
-        <GraphViewer />
+        {graph && <GraphViewer graph={graph} />}
         <Stack>
           <div className="bgColor-default py-2 position-sticky top-0 z-1 d-flex flex-items-start">
             <Stack className="flex-column flex-sm-row flex-items-start flex-sm-items-center" style={{width: "100%"}}>
