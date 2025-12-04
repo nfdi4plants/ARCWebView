@@ -1,8 +1,12 @@
 import React, { useEffect, useRef } from "react";
-import { ROCrate } from '@nfdi4plants/arctrl'
+import { JsonController, ROCrate } from '@nfdi4plants/arctrl'
 import Sigma from "sigma";
 import Graph from "graphology";
 import dagre from "@dagrejs/dagre";
+
+type LDGraph = ReturnType<typeof JsonController.LDGraph.fromROCrateJsonString>;
+type LDContext = Parameters<typeof ROCrate.LDLabProcess.validate>[1];
+type LDNode = Parameters<typeof ROCrate.LDLabProcess.validate>[0];
 
 const containerStyle: React.CSSProperties = {
   width: "800px",
@@ -10,68 +14,131 @@ const containerStyle: React.CSSProperties = {
   background: "white",
 };
 
-function getAllProcesses(graph: any) {
-  const processes = graph.Nodes.filter(
-    node => ROCrate.LDLabProcess.validate(node, graph.TryGetContext())
-  );
-  return processes;
-}
+type Node = {
+  id: string;
+  label: string;
+  x?: number;
+  y?: number;
+};
 
-function addNodesFromProcesses(processes: any, graph: any, sigmaGraph: Graph) {
-  let dg = new dagre.graphlib.Graph()
+type Edge = {
+  id: string;
+  label: string;
+  source: string;
+  target: string;
+};
 
-  dg.setGraph({ rankdir: 'LR' })
-  // Default to assigning a new object as a label for each new edge.
-  dg.setDefaultEdgeLabel(function() { return {}; });
+/**
+ * Returns all nodes in the LDGraph that are valid Lab Processes.
+ *
+ * @param ldGraph - The LDGraph instance to search for processes.
+ * @returns An array of nodes that are validated as Lab Processes.
+ * @throws Error if no context is found in the LDGraph.
+ */
+ function getAllProcesses(ldGraph: LDGraph, context: LDContext): LDNode[] {
+   const processes = ldGraph.Nodes.filter(
+     node => ROCrate.LDLabProcess.validate(node, context)
+   );
+   return processes;
+ }
 
-  let edges = []
+function nodesAndEdgesFromProcesses(processes: LDNode[], ldGraph: LDGraph, context: LDContext) {
+  const nodes: Node[] = [];
+  const edges: Edge[] = [];
 
   processes.forEach((process) => {
-    // @TODO this crashes if there is no input or output (see Mielke ARC)
-    let input = ROCrate.LDLabProcess.getObjects(process, graph, graph.TryGetContext())[0].id
-    let output = ROCrate.LDLabProcess.getResults(process, graph, graph.TryGetContext())[0].id
-    if (!dg.hasNode(input))
-      dg.setNode(input, { label: input,  width: 144, height: 100 });
-    //sigmaGraph.addNode(input, { x: Math.random(), y:Math.random(), label: input})
-    if (!dg.hasNode(output))
-      dg.setNode(output, { label: output,  width: 144, height: 100 });
-    dg.setEdge(input, output)
-    console.log(process)
-    const protocol = ROCrate.LDLabProcess.tryGetExecutesLabProtocol(process, graph, graph.TryGetContext())
-    const edgeLabel = protocol?.name || protocol.id ;
-    edges.push({ in: input, out: output, label: edgeLabel })
+    const id = process.id;
+
+    const inputs = ROCrate.LDLabProcess.getObjects(process, ldGraph, context as LDContext);
+    const outputs = ROCrate.LDLabProcess.getResults(process, ldGraph, context as LDContext);
+
+    if (inputs.length > 0 && outputs.length > 0) {
+      let label = id;
+      let protocol = ROCrate.LDLabProcess.tryGetExecutesLabProtocol(process, ldGraph, context);
+      if(protocol) {
+        protocol = protocol as LDNode;
+        const name = ROCrate.LDLabProtocol.tryGetNameAsString(protocol, context);
+        label = name ? name as string : protocol.id;
+      }
+      edges.push({ id, label, source: inputs[0].id, target: outputs[0].id });
+
+      const input = inputs[0];
+      const output = outputs[0];
+
+      // Only add unique nodes
+      if (!nodes.some(n => n.id === input.id)) {
+        nodes.push({ id: input.id, label: input.id });
+      }
+      if (!nodes.some(n => n.id === output.id)) {
+        nodes.push({ id: output.id, label: output.id });
+      }
+    }
+  });
+
+  return { nodes, edges };
+}
+
+function layoutNodes(nodes: Node[], edges: Edge[]) {
+  const dg = new dagre.graphlib.Graph()
+  dg.setGraph({ rankdir: 'LR' })
+  dg.setDefaultEdgeLabel(function() { return {}; }); // somehow needed
+
+  nodes.forEach((node) => {
+    dg.setNode(node.id, { label: node.label, width: 20, height: 20 });
   })
+
+  edges.forEach((edge) => {
+    dg.setEdge(edge.source, edge.target, { label: edge.label });
+  })
+
   dagre.layout(dg)
-  console.log(dg)
-  window.dg = dg;
-  dg.nodes().forEach((n) => {
-    sigmaGraph.addNode(n, { x: dg._nodes[n].x, y: dg._nodes[n].y, label: n})
+
+  nodes.forEach((node) => {
+    const { x, y } = dg.node(node.id);
+    node.x = x;
+    node.y = y;
   })
-  edges.forEach((e) => {
-    sigmaGraph.addEdge(e.in, e.out, { label: e.label })
+}
+
+function buildSigmaGraph(graph: LDGraph) {
+  let context = graph.TryGetContext();
+  if(!context) throw new Error("No context found in LDGraph.");
+  context = context as LDContext;
+
+  const processes = getAllProcesses(graph, context);
+  const { nodes, edges } = nodesAndEdgesFromProcesses(processes, graph, context);
+  window.nodes = nodes;
+  window.edges = edges;
+  layoutNodes(nodes, edges);
+
+  const sigmaGraph = new Graph();
+  nodes.forEach((node) => {
+    sigmaGraph.addNode(node.id, { x: node.x, y: node.y, label: node.label })
   })
-  //sigmaGraph.addNode(n, { x: Math.random(), y:Math.random(), label: output})
-  //sigmaGraph.addDirectedEdge(input, output)
+  edges.forEach((edge) => {
+    sigmaGraph.addDirectedEdge(edge.source, edge.target, { label: edge.label })
+  })
   return sigmaGraph
 
 }
 
-const GraphViewer: React.FC<{ graph: any }> = ({ graph }) => {
+const GraphViewer: React.FC<{ graph: LDGraph }> = ({ graph }) => {
+  window.ldGraph = graph;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const sigmaInstanceRef = useRef<Sigma | null>(null);
 
   useEffect(() => {
     // Create a graphology graph
-    window.ldgraph = graph;
-    let sigmaGraph = new Graph();
-    let allProcs = getAllProcesses(graph);
-    sigmaGraph = addNodesFromProcesses(allProcs, graph, sigmaGraph);
+    const sigmaGraph = buildSigmaGraph(graph);
 
     // Instantiate sigma.js and render the graph
     if (containerRef.current) {
-      window.graph = sigmaGraph;
-      sigmaInstanceRef.current = new Sigma(sigmaGraph, containerRef.current, { renderEdgeLabels: true });
+      sigmaInstanceRef.current = new Sigma(sigmaGraph, containerRef.current, { renderEdgeLabels: true, defaultEdgeType: "arrow" });
+      // https://www.sigmajs.org/storybook/?path=/story/sigma-edge-curve--interactions
     }
+
+    window.ROCrate = ROCrate;
+    window.sigmaGraph = sigmaGraph;
 
     // Cleanup on unmount
     return () => {
