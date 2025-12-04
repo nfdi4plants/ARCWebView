@@ -17,6 +17,7 @@ const containerStyle: React.CSSProperties = {
 type Node = {
   id: string;
   label: string;
+  type: string;
   x?: number;
   y?: number;
 };
@@ -67,10 +68,10 @@ function nodesAndEdgesFromProcesses(processes: LDNode[], ldGraph: LDGraph, conte
 
       // Only add unique nodes
       if (!nodes.some(n => n.id === input.id)) {
-        nodes.push({ id: input.id, label: input.id });
+        nodes.push({ id: input.id, label: input.id, type: input.AdditionalType[0] || input.SchemaType[0] });
       }
       if (!nodes.some(n => n.id === output.id)) {
-        nodes.push({ id: output.id, label: output.id });
+        nodes.push({ id: output.id, label: output.id, type: output.AdditionalType[0] || output.SchemaType[0] });
       }
     }
   });
@@ -113,7 +114,27 @@ function buildSigmaGraph(graph: LDGraph) {
 
   const sigmaGraph = new Graph();
   nodes.forEach((node) => {
-    sigmaGraph.addNode(node.id, { x: node.x, y: node.y, label: node.label })
+    let color: string;
+    let size: number;
+    switch (node.type) {
+      case "Source":
+        color = "#3B734E";
+        size = 4;
+        break;
+      case "Sample":
+        color = "#2E68D3";
+        size = 3;
+        break;
+      case "File":
+        color = "#202328";
+        size = 2;
+        break;
+      default:
+        color = "black";
+        size = 2;
+        break;
+    }
+    sigmaGraph.addNode(node.id, { x: node.x, y: node.y, label: node.label, color, size })
   })
   edges.forEach((edge) => {
     sigmaGraph.addDirectedEdge(edge.source, edge.target, { label: edge.label })
