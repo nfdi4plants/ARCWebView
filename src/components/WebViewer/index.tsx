@@ -15,6 +15,7 @@ import FileTree from '../FileTree'
 import Icons from '../Icons'
 import {XCircleIcon} from '@primer/octicons-react'
 import GraphViewer from '../GraphViewer'
+import {WorkflowIcon} from '@primer/octicons-react'
 
 function pathsToFileTree(paths: string[], exportMetadataMap: Map<string, ARCExportMetadata>) {
   const root: TreeNode = { name: "root", id: "", type: "folder", children: [] };
@@ -317,6 +318,7 @@ export default function WebViewer({ jsonString, readmefetch, licensefetch, clear
   const {setCache} = useSearchCacheContext()
 
   const [sidebarActive, setSidebarActive] = useState(false);
+  const [graphPaneActive, setGraphPaneActive] = useState(false);
 
   const isSmallScreen = useResponsiveValue({
     narrow: true,
@@ -387,7 +389,15 @@ export default function WebViewer({ jsonString, readmefetch, licensefetch, clear
         {renderedTree}
       </SplitPageLayout.Pane>
       <SplitPageLayout.Content>
-        {graph && <GraphViewer graph={graph} />}
+        {graphPaneActive && (
+          <Dialog
+            title="Graph Viewer"
+            onClose={() => setGraphPaneActive(false)}
+            position="right"
+          >
+            {graph && <GraphViewer graph={graph} />}
+          </Dialog>
+        )}
         <Stack>
           <div className="bgColor-default py-2 position-sticky top-0 z-1 d-flex flex-items-start">
             <Stack className="flex-column flex-sm-row flex-items-start flex-sm-items-center" style={{width: "100%"}}>
@@ -396,9 +406,17 @@ export default function WebViewer({ jsonString, readmefetch, licensefetch, clear
                 <TreeSearch navigateTo={navigateTo} />
               </div>
               {currentTreeNode && arc && arc.Title && <FileBreadcrumbs currentTreeNode={currentTreeNode} navigateTo={navigateTo} title={arc.Title} />}
-              {clearJsonCallback &&
-                <IconButton style={{ marginLeft: "auto" }} aria-label="Clear loaded JSON and upload new" variant='danger' icon={XCircleIcon} onClick={() => clearJsonCallback()} />
-              }
+              <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem" }}>
+                <IconButton
+                  aria-label="Show Graph Viewer"
+                  variant="invisible"
+                  icon={WorkflowIcon}
+                  onClick={() => setGraphPaneActive(true)}
+                />
+                {clearJsonCallback &&
+                  <IconButton aria-label="Clear loaded JSON and upload new" variant='danger' icon={XCircleIcon} onClick={() => clearJsonCallback()} />
+                }
+              </div>
             </Stack>
           </div>
           {
