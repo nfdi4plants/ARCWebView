@@ -23,7 +23,11 @@ function addNodesFromProcesses(processes: any, graph: any, sigmaGraph: Graph) {
   dg.setGraph({ rankdir: 'LR' })
   // Default to assigning a new object as a label for each new edge.
   dg.setDefaultEdgeLabel(function() { return {}; });
+
+  let edges = []
+
   processes.forEach((process) => {
+    // @TODO this crashes if there is no input or output (see Mielke ARC)
     let input = ROCrate.LDLabProcess.getObjects(process, graph, graph.TryGetContext())[0].id
     let output = ROCrate.LDLabProcess.getResults(process, graph, graph.TryGetContext())[0].id
     if (!dg.hasNode(input))
@@ -32,6 +36,10 @@ function addNodesFromProcesses(processes: any, graph: any, sigmaGraph: Graph) {
     if (!dg.hasNode(output))
       dg.setNode(output, { label: output,  width: 144, height: 100 });
     dg.setEdge(input, output)
+    console.log(process)
+    const protocol = ROCrate.LDLabProcess.tryGetExecutesLabProtocol(process, graph, graph.TryGetContext())
+    const edgeLabel = protocol?.name || protocol.id ;
+    edges.push({ in: input, out: output, label: edgeLabel })
   })
   dagre.layout(dg)
   console.log(dg)
@@ -39,8 +47,8 @@ function addNodesFromProcesses(processes: any, graph: any, sigmaGraph: Graph) {
   dg.nodes().forEach((n) => {
     sigmaGraph.addNode(n, { x: dg._nodes[n].x, y: dg._nodes[n].y, label: n})
   })
-  dg.edges().forEach((e) => {
-    sigmaGraph.addEdge(e.v, e.w)
+  edges.forEach((e) => {
+    sigmaGraph.addEdge(e.in, e.out, { label: e.label })
   })
   //sigmaGraph.addNode(n, { x: Math.random(), y:Math.random(), label: output})
   //sigmaGraph.addDirectedEdge(input, output)
@@ -54,17 +62,15 @@ const GraphViewer: React.FC<{ graph: any }> = ({ graph }) => {
 
   useEffect(() => {
     // Create a graphology graph
-    console.log(graph);
     window.ldgraph = graph;
     let sigmaGraph = new Graph();
     let allProcs = getAllProcesses(graph);
     sigmaGraph = addNodesFromProcesses(allProcs, graph, sigmaGraph);
-    //doDagre();
 
     // Instantiate sigma.js and render the graph
     if (containerRef.current) {
       window.graph = sigmaGraph;
-      sigmaInstanceRef.current = new Sigma(sigmaGraph, containerRef.current);
+      sigmaInstanceRef.current = new Sigma(sigmaGraph, containerRef.current, { renderEdgeLabels: true });
     }
 
     // Cleanup on unmount
