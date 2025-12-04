@@ -35,7 +35,9 @@
       "styles": "./dist/arc-web-view.css"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
@@ -52,8 +54,10 @@
     "@primer/css": "^22.0.2",
     "@primer/primitives": "^11.0.0",
     "@primer/react": "^37.29.0",
+    "graphology": "^0.26.0",
     "marked": "^16.1.1",
     "mermaid": "^11.9.0",
+    "sigma": "^3.0.2",
     "styled-components": "^5.3.11"
   },
   "peerDependencies": {

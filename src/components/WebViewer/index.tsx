@@ -14,6 +14,7 @@ import ARCMetadata from '../Metadata/ARCMetadata'
 import FileTree from '../FileTree'
 import Icons from '../Icons'
 import {XCircleIcon} from '@primer/octicons-react'
+import GraphViewer from '../GraphViewer'
 
 function pathsToFileTree(paths: string[], exportMetadataMap: Map<string, ARCExportMetadata>) {
   const root: TreeNode = { name: "root", id: "", type: "folder", children: [] };
@@ -68,7 +69,7 @@ function findNodeAtPath(tree: TreeNode, targetPath: string): TreeNode | null {
 }
 
 // async function findReadme(tree: TreeNode): Promise<string> {
-//   if (tree.name !== "root") 
+//   if (tree.name !== "root")
 //     return "No Readme found";
 //   return readme;
 // }
@@ -112,8 +113,8 @@ async function asyncDataToSearchCache(tree: TreeNode, arc: ARC, setCache: React.
       table.Headers.forEach(header => {
         const term = header.TryGetTerm();
         if (!term) {
-          headers.add({ name: header.toString(), path, type: "header" });        
-        } 
+          headers.add({ name: header.toString(), path, type: "header" });
+        }
         if (term) {
           const nametext = (term as OntologyAnnotation).NameText;
           if (nametext) {
@@ -356,7 +357,7 @@ export default function WebViewer({ jsonString, readmefetch, licensefetch, clear
   }, [setCache, jsonString])
 
   const expandedFolderIds = useMemo(() => {
-    return currentTreeNode?.id ? findPathToNode(tree?.children || [], currentTreeNode.id) ?? [] : []; 
+    return currentTreeNode?.id ? findPathToNode(tree?.children || [], currentTreeNode.id) ?? [] : [];
   }, [tree, currentTreeNode]);
 
   const renderedTree = useMemo(() => (
@@ -374,16 +375,17 @@ export default function WebViewer({ jsonString, readmefetch, licensefetch, clear
           </SideSheet>
         )}
       </div>
-      <SplitPageLayout.Pane 
-        aria-label="Sidebar" 
-        resizable={true} 
+      <SplitPageLayout.Pane
+        aria-label="Sidebar"
+        resizable={true}
         widthStorageKey={"arc-webviewer-sidebar-width"}
-        hidden={!sidebarActive || isSmallScreen as boolean} 
+        hidden={!sidebarActive || isSmallScreen as boolean}
         sticky={true}
       >
         {renderedTree}
       </SplitPageLayout.Pane>
       <SplitPageLayout.Content>
+        <GraphViewer />
         <Stack>
           <div className="bgColor-default py-2 position-sticky top-0 z-1 d-flex flex-items-start">
             <Stack className="flex-column flex-sm-row flex-items-start flex-sm-items-center" style={{width: "100%"}}>
@@ -399,7 +401,7 @@ export default function WebViewer({ jsonString, readmefetch, licensefetch, clear
           </div>
           {
             currentTreeNode && currentTreeNode.type === 'file' && arc
-              ? (renderFileComponentByName(currentTreeNode, arc)) 
+              ? (renderFileComponentByName(currentTreeNode, arc))
               : <FileTable loading={loading} currentTreeNode={currentTreeNode} navigateTo={navigateTo} />
           }
           {tree && currentTreeNode && currentTreeNode.name === "root" && currentTreeNode.type === 'folder' &&
