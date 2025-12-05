@@ -5,7 +5,7 @@ import { GraphView } from "./lib/GraphView";
 type LDGraph = ReturnType<typeof JsonController.LDGraph.fromROCrateJsonString>;
 
 const containerStyle: React.CSSProperties = {
-  width: "800px",
+  width: "100%",
   height: "600px",
   background: "white",
 };

@@ -16,6 +16,7 @@ import Icons from '../Icons'
 import {XCircleIcon} from '@primer/octicons-react'
 import GraphViewer from '../GraphViewer'
 import {WorkflowIcon} from '@primer/octicons-react'
+import {UnderlinePanels} from '@primer/react/experimental'
 
 function pathsToFileTree(paths: string[], exportMetadataMap: Map<string, ARCExportMetadata>) {
   const root: TreeNode = { name: "root", id: "", type: "folder", children: [] };
@@ -318,7 +319,8 @@ export default function WebViewer({ jsonString, readmefetch, licensefetch, clear
   const {setCache} = useSearchCacheContext()
 
   const [sidebarActive, setSidebarActive] = useState(false);
-  const [graphPaneActive, setGraphPaneActive] = useState(false);
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [graphTabVisited, setGraphTabVisited] = useState(false);
 
   const isSmallScreen = useResponsiveValue({
     narrow: true,
@@ -386,18 +388,40 @@ export default function WebViewer({ jsonString, readmefetch, licensefetch, clear
         hidden={!sidebarActive || isSmallScreen as boolean}
         sticky={true}
       >
-        {renderedTree}
+        {(() => {
+          const handleTabSelect = (tabIndex: number) => {
+            setSelectedTab(tabIndex);
+            if (tabIndex === 1) setGraphTabVisited(true);
+          };
+
+          return (
+            <UnderlinePanels aria-label="Select a tab">
+              <UnderlinePanels.Tab
+                aria-selected={selectedTab === 0}
+                onSelect={() => handleTabSelect(0)}
+              >
+                File Tree
+              </UnderlinePanels.Tab>
+              <UnderlinePanels.Tab
+                aria-selected={selectedTab === 1}
+                onSelect={() => handleTabSelect(1)}
+              >
+                Graph View
+              </UnderlinePanels.Tab>
+              <UnderlinePanels.Panel>{renderedTree}</UnderlinePanels.Panel>
+              <UnderlinePanels.Panel>
+                {graphTabVisited && (
+                  <div style={{ display: selectedTab === 1 ? "block" : "none", width: "100%", height: "100%" }}>
+                    {graph && <GraphViewer graph={graph} />}
+                  </div>
+                )}
+              </UnderlinePanels.Panel>
+            </UnderlinePanels>
+          );
+        })()}
       </SplitPageLayout.Pane>
       <SplitPageLayout.Content>
-        {graphPaneActive && (
-          <Dialog
-            title="Graph Viewer"
-            onClose={() => setGraphPaneActive(false)}
-            position="right"
-          >
-            {graph && <GraphViewer graph={graph} />}
-          </Dialog>
-        )}
+
         <Stack>
           <div className="bgColor-default py-2 position-sticky top-0 z-1 d-flex flex-items-start">
             <Stack className="flex-column flex-sm-row flex-items-start flex-sm-items-center" style={{width: "100%"}}>
@@ -407,12 +431,6 @@ export default function WebViewer({ jsonString, readmefetch, licensefetch, clear
               </div>
               {currentTreeNode && arc && arc.Title && <FileBreadcrumbs currentTreeNode={currentTreeNode} navigateTo={navigateTo} title={arc.Title} />}
               <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem" }}>
-                <IconButton
-                  aria-label="Show Graph Viewer"
-                  variant="invisible"
-                  icon={WorkflowIcon}
-                  onClick={() => setGraphPaneActive(true)}
-                />
                 {clearJsonCallback &&
                   <IconButton aria-label="Clear loaded JSON and upload new" variant='danger' icon={XCircleIcon} onClick={() => clearJsonCallback()} />
                 }
