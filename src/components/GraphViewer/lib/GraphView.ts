@@ -10,6 +10,8 @@ type LDNode = Parameters<typeof ROCrate.LDLabProcess.validate>[0];
 type Node = {
   id: string;
   label: string;
+  type: string;
+  metadata: { [key: string]: string };
   x?: number;
   y?: number;
 };
@@ -19,6 +21,7 @@ type Edge = {
   label: string;
   source: string;
   target: string;
+  metadata: { [key: string]: string };
 };
 
 function getAllProcesses(ldGraph: LDGraph, context: LDContext): LDNode[] {
@@ -27,9 +30,38 @@ function getAllProcesses(ldGraph: LDGraph, context: LDContext): LDNode[] {
   );
 }
 
+function getNodeMetadata(node: LDNode, ldGraph: LDGraph, context: LDContext): { [key: string]: string } {
+  switch(node.SchemaType[0]) {
+    case "Sample":
+      return Object.fromEntries(ROCrate.LDSample.getAdditionalProperties(node, ldGraph, context).map(
+        (s) => [
+          s.name, s.value
+// @TODO for some reason the below doesn't work, I don't understand why.
+//          ROCrate.LDPropertyValue.getNameAsString(s),
+//          ROCrate.LDPropertyValue.getValueAsString(s)
+        ]
+      ));
+    case "LabProcess":
+      return Object.fromEntries(ROCrate.LDLabProcess.getParameterValues(node, ldGraph, context).map(
+        (s) => [
+          s.name, s.value
+//          ROCrate.LDPropertyValue.getNameAsString(s),
+//          ROCrate.LDPropertyValue.getValueAsString(s)
+        ]
+      ));
+    case "File":
+      return {};
+    default:
+      console.log(node)
+      throw new Error("Unsupported node type: " + node.SchemaType[0])
+  }
+}
+
 function nodesAndEdgesFromProcesses(processes: LDNode[], ldGraph: LDGraph, context: LDContext) {
-  const nodes: Node[] = [];
-  const edges: Edge[] = [];
+  const nodes: { [id: string]: Node } = {};
+  const edges: { [id: string]: Edge } = {};
+
+  window.ROCrate = ROCrate;
 
   processes.forEach((process) => {
     const id = process.id;
@@ -45,59 +77,74 @@ function nodesAndEdgesFromProcesses(processes: LDNode[], ldGraph: LDGraph, conte
         const name = ROCrate.LDLabProtocol.tryGetNameAsString(protocol, context);
         label = name ? name as string : protocol.id;
       }
-      edges.push({ id, label, source: inputs[0].id, target: outputs[0].id });
+      edges[id] = {
+        id,
+        label,
+        source: inputs[0].id,
+        target: outputs[0].id,
+        metadata: getNodeMetadata(process, ldGraph, context)
+      };
 
       const input = inputs[0];
       const output = outputs[0];
 
-      if (!nodes.some(n => n.id === input.id)) {
-        nodes.push({ id: input.id, label: input.id });
+      if (!nodes[input.id]) {
+        nodes[input.id] = {
+          id: input.id,
+          label: input.id,
+          type: input.AdditionalType[0] || input.SchemaType[0],
+          metadata: getNodeMetadata(input, ldGraph, context)
+        };
       }
-      if (!nodes.some(n => n.id === output.id)) {
-        nodes.push({ id: output.id, label: output.id });
+      if (!nodes[output.id]) {
+        nodes[output.id] = {
+          id: output.id,
+          label: output.id,
+          type: output.AdditionalType[0] || output.SchemaType[0],
+          metadata: getNodeMetadata(output, ldGraph, context)
+        };
       }
     }
   });
 
+  // @TODO
+  window.nodes = nodes;
+  window.edges = edges;
   return { nodes, edges };
 }
 
-function layoutNodes(nodes: Node[], edges: Edge[]) {
+function layoutNodes(nodes: { [id: string]: Node }, edges: { [id: string]: Edge }) {
   const dg = new dagre.graphlib.Graph();
   dg.setGraph({ rankdir: 'LR' });
   dg.setDefaultEdgeLabel(function() { return {}; });
 
-  nodes.forEach((node) => {
+  Object.values(nodes).forEach((node) => {
     dg.setNode(node.id, { label: node.label, width: 20, height: 20 });
   });
 
-  edges.forEach((edge) => {
+  Object.values(edges).forEach((edge) => {
     dg.setEdge(edge.source, edge.target, { label: edge.label });
   });
 
   dagre.layout(dg);
 
-  nodes.forEach((node) => {
+  Object.values(nodes).forEach((node) => {
     const { x, y } = dg.node(node.id);
     node.x = x;
     node.y = y;
   });
 }
 
-function buildSigmaGraph(graph: LDGraph): Graph {
-  let context = graph.TryGetContext();
-  if(!context) throw new Error("No context found in LDGraph.");
-  context = context as LDContext;
-
+function buildSigmaGraph(graph: LDGraph, context: LDContext): Graph {
   const processes = getAllProcesses(graph, context);
   const { nodes, edges } = nodesAndEdgesFromProcesses(processes, graph, context);
   layoutNodes(nodes, edges);
 
   const sigmaGraph = new Graph();
-  nodes.forEach((node) => {
+  Object.values(nodes).forEach((node) => {
     sigmaGraph.addNode(node.id, { x: node.x, y: node.y, label: node.label });
   });
-  edges.forEach((edge) => {
+  Object.values(edges).forEach((edge) => {
     sigmaGraph.addDirectedEdge(edge.source, edge.target, { label: edge.label });
   });
   return sigmaGraph;
@@ -107,7 +154,11 @@ export class GraphView {
   private sigmaInstance: Sigma | null = null;
 
   constructor(graph: LDGraph, domElement: HTMLElement) {
-    const sigmaGraph = buildSigmaGraph(graph);
+    let context = graph.TryGetContext();
+    if(!context) throw new Error("No context found in LDGraph.");
+    context = context as LDContext;
+
+    const sigmaGraph = buildSigmaGraph(graph, context);
     this.sigmaInstance = new Sigma(sigmaGraph, domElement, { renderEdgeLabels: true, defaultEdgeType: "arrow" });
   }
 

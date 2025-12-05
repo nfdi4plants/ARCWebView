@@ -14,6 +14,8 @@ const GraphViewer: React.FC<{ graph: LDGraph }> = ({ graph }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const graphViewRef = useRef<GraphView | null>(null);
 
+  window.ldGraph = graph;
+
   useEffect(() => {
     if (containerRef.current) {
       graphViewRef.current = new GraphView(graph, containerRef.current);
