@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { JsonController } from '@nfdi4plants/arctrl'
 import { GraphView } from "./lib/GraphView";
-import { Autocomplete, FormControl } from '@primer/react';
+import { FormControl, SelectPanel, Button } from '@primer/react';
+import { TriangleDownIcon } from '@primer/octicons-react';
+import { type ActionListItemInput } from '@primer/react/deprecated';
 
 type LDGraph = ReturnType<typeof JsonController.LDGraph.fromROCrateJsonString>;
 
@@ -14,9 +16,10 @@ const containerStyle: React.CSSProperties = {
 const GraphViewer: React.FC<{ graph: LDGraph }> = ({ graph }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const graphViewRef = useRef<GraphView | null>(null);
-  const [locationId, setLocationId] = useState("");
-  const [locations, setLocations] = useState<{text: string, id: string}[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [locations, setLocations] = useState<ActionListItemInput[]>([]);
+  const [selected, setSelected] = useState<ActionListItemInput | undefined>(undefined);
+  const [open, setOpen] = useState(false);
+  const [filter, setFilter] = useState('');
 
   window.ldGraph = graph;
 
@@ -24,12 +27,9 @@ const GraphViewer: React.FC<{ graph: LDGraph }> = ({ graph }) => {
     if (containerRef.current) {
       graphViewRef.current = new GraphView(graph, containerRef.current);
       window.sigmaGraph = graphViewRef.current;
-      // Get locations for autocomplete
-      const locs = graphViewRef.current.getLocations(true).map(id => ({ text: id, id }));
+      const locs = graphViewRef.current.getLocations(false).map(id => ({ text: id, id }));
       setLocations(locs);
     }
-
-    // Cleanup on unmount
     return () => {
       if (graphViewRef.current) {
         graphViewRef.current.destroy();
@@ -38,44 +38,36 @@ const GraphViewer: React.FC<{ graph: LDGraph }> = ({ graph }) => {
     };
   }, [graph]);
 
-  const handleGoTo = (id?: string) => {
-    const targetId = id ?? locationId;
-    if (graphViewRef.current && targetId.trim()) {
-      try {
-        graphViewRef.current.zoomToLocation(targetId.trim());
-      } catch (e) {
-        alert((e as Error).message);
-      }
-    }
-  };
-
+  // @TODO show metadta using https://primer.style/product/components/data-table/
   return (
     <div>
       <FormControl>
-        <FormControl.Label
-          htmlFor="rp"
-          id="autocompleteLabel-location"
-          visuallyHidden
-        >
+        <FormControl.Label htmlFor="rp" id="selectLabel-location">
           Go to location
         </FormControl.Label>
-        <Autocomplete>
-          <Autocomplete.Input
-            placeholder="Enter location"
-          />
-          <Autocomplete.Overlay>
-            <Autocomplete.Menu
-              selectedItemIds={selectedId ? [selectedId] : []}
-              selectionVariant='single'
-              aria-labelledby="autocompleteLabel-location"
-              items={locations}
-              onSelectedChange={items => {
-                console.log(items);
-                graphViewRef.current.zoomToLocation(items[0].id.trim());
-              }}
-            />
-          </Autocomplete.Overlay>
-        </Autocomplete>
+        <SelectPanel
+          renderAnchor={({children, ...anchorProps}) => (
+            <Button {...anchorProps} trailingAction={TriangleDownIcon} aria-haspopup="dialog">
+              {selected ? selected.text : "Pick location"}
+            </Button>
+          )}
+          placeholder="Pick location"
+          open={open}
+          onOpenChange={setOpen}
+          items={locations.filter(
+            item =>
+              item.text?.toLowerCase().includes(filter.toLowerCase())
+          )}
+          selected={selected}
+          onSelectedChange={item => {
+            setSelected(item);
+            setOpen(false);
+            if (item && graphViewRef.current) {
+              graphViewRef.current.zoomToLocation(item.id.trim());
+            }
+          }}
+          onFilterChange={setFilter}
+        />
       </FormControl>
       <div style={{ marginTop: 8 }} />
       <div ref={containerRef} style={containerStyle} />
