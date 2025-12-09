@@ -35,7 +35,7 @@ function resolveOption<T>(opt: Option<T>, defaultValue: T): T {
   return opt != null ? opt as T : defaultValue;
 }
 
-function getNodeMetadata(node: LDNode, ldGraph: LDGraph, context: LDContext): { [key: string]: string } {
+function extractNodeMetadataFromLDGraph(node: LDNode, ldGraph: LDGraph, context: LDContext): { [key: string]: string } {
   switch(node.SchemaType[0]) {
     case "Sample":
       return Object.fromEntries(ROCrate.LDSample.getAdditionalProperties(node, ldGraph, context).map(
@@ -85,7 +85,7 @@ function buildNodesAndEdgesFromProcesses(
         label,
         source: inputs[0].id,
         target: outputs[0].id,
-        metadata: getNodeMetadata(process, ldGraph, context)
+        metadata: extractNodeMetadataFromLDGraph(process, ldGraph, context)
       };
 
       const input = inputs[0];
@@ -96,7 +96,7 @@ function buildNodesAndEdgesFromProcesses(
           id: input.id,
           label: input.id,
           type: input.AdditionalType[0] || input.SchemaType[0],
-          metadata: getNodeMetadata(input, ldGraph, context)
+          metadata: extractNodeMetadataFromLDGraph(input, ldGraph, context)
         };
       }
       if (!nodes[output.id]) {
@@ -104,7 +104,7 @@ function buildNodesAndEdgesFromProcesses(
           id: output.id,
           label: output.id,
           type: output.AdditionalType[0] || output.SchemaType[0],
-          metadata: getNodeMetadata(output, ldGraph, context)
+          metadata: extractNodeMetadataFromLDGraph(output, ldGraph, context)
         };
       }
     }
@@ -156,7 +156,12 @@ export class GraphView {
   private nodes: { [id: string]: Node } = {};
   private edges: { [id: string]: Edge } = {};
 
-  constructor(graph: LDGraph, domElement: HTMLElement) {
+  constructor(
+    graph: LDGraph,
+    domElement: HTMLElement,
+    onNodeHover?: (node: Node) => void,
+    onEdgeHover?: (edge: Edge) => void
+  ) {
     let context = graph.TryGetContext();
     if (!context) throw new Error("No context found in LDGraph.");
     context = context as LDContext;
@@ -173,18 +178,33 @@ export class GraphView {
 
     layoutNodes(this.nodes, this.edges);
 
-    const sigmaGraph = new Graph();
+    const sigmaGraph = new Graph({type: "directed"});
     Object.values(this.nodes).forEach((node) => {
       sigmaGraph.addNode(node.id, { x: node.x, y: node.y, label: node.label });
     });
     Object.values(this.edges).forEach((edge) => {
-      sigmaGraph.addDirectedEdge(edge.source, edge.target, { label: edge.label });
+      sigmaGraph.addEdgeWithKey(edge.id, edge.source, edge.target, { label: edge.label });
     });
     this.sigmaInstance = new Sigma(sigmaGraph, domElement, {
       renderEdgeLabels: true,
       defaultEdgeType: "arrow",
       labelRenderedSizeThreshold: 4,
+      enableEdgeEvents: true
     });
+
+    if (onNodeHover) {
+      this.sigmaInstance.on("enterNode", ({ node }) => {
+        if (this.nodes[node]) onNodeHover(this.nodes[node]);
+      });
+    }
+    if (onEdgeHover) {
+      this.sigmaInstance.on("enterEdge", ({ edge }) => {
+        console.log("hey")
+        console.log(edge)
+        console.log(this.edges)
+       if (this.edges[edge]) onEdgeHover(this.edges[edge]);
+      });
+    }
   }
 
   zoomToLocation(id: string) {
@@ -226,6 +246,16 @@ export class GraphView {
     const nodeIds = Object.keys(this.nodes);
     if (!includeEdges) return nodeIds;
     return nodeIds.concat(Object.keys(this.edges));
+  }
+
+  getLocationMetadata(id: string): { [key: string]: string } {
+    if (this.nodes[id]) {
+      return this.nodes[id].metadata;
+    } else if (this.edges[id]) {
+      return this.edges[id].metadata;
+    } else {
+      throw new Error(`No node or edge found with id: ${id}`);
+    }
   }
 
   destroy() {
