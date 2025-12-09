@@ -21,7 +21,7 @@ const GraphViewer: React.FC<{ graph: LDGraph }> = ({ graph }) => {
   const [selected, setSelected] = useState<ActionListItemInput | undefined>(undefined);
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState('');
-  const [hovered, setHovered] = useState<{ id: string, metadata: { [key: string]: string } } | null>(null);
+  const [hovered, setHovered] = useState<{ id: string, metadata: { [key: string]: string }, input?:string, output?:string } | null>(null);
 
   window.ldGraph = graph;
 
@@ -31,7 +31,7 @@ const GraphViewer: React.FC<{ graph: LDGraph }> = ({ graph }) => {
         graph,
         containerRef.current,
         node => setHovered({ id: node.id, metadata: node.metadata }),
-        edge => setHovered({ id: edge.id, metadata: edge.metadata })
+        edge => setHovered({ id: edge.id, metadata: edge.metadata , input: edge.source, output: edge.target})
       );
       window.sigmaGraph = graphViewRef.current;
       const locs = graphViewRef.current.getLocations(false).map(id => ({ text: id, id }));
@@ -100,6 +100,37 @@ const GraphViewer: React.FC<{ graph: LDGraph }> = ({ graph }) => {
             <Table.Title as="h2" id="metadata-table" style={{ fontSize: 16, marginBottom: 8 }}>
               Metadata for <span style={{ fontWeight: 600 }}>{hovered.id}</span>
             </Table.Title>
+            {(hovered.input || hovered.output) && (
+              <div style={{ marginBottom: 8 }}>
+                {hovered.input && (
+                  <Button
+                    size="small"
+                    variant="invisible"
+                    onClick={() => {
+                      if (graphViewRef.current) {
+                        graphViewRef.current.zoomToLocation(hovered.input!);
+                      }
+                    }}
+                    style={{ marginRight: 8 }}
+                  >
+                    Jump to input
+                  </Button>
+                )}
+                {hovered.output && (
+                  <Button
+                    size="small"
+                    variant="invisible"
+                    onClick={() => {
+                      if (graphViewRef.current) {
+                        graphViewRef.current.zoomToLocation(hovered.output!);
+                      }
+                    }}
+                  >
+                    Jump to output
+                  </Button>
+                )}
+              </div>
+            )}
             <DataTable
               aria-labelledby="metadata-table"
               data={Object.entries(hovered.metadata).map(([key, value], idx) => ({
