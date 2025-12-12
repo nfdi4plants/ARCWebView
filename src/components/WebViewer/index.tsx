@@ -14,6 +14,9 @@ import ARCMetadata from '../Metadata/ARCMetadata'
 import FileTree from '../FileTree'
 import Icons from '../Icons'
 import {XCircleIcon} from '@primer/octicons-react'
+import GraphViewer from '../GraphViewer'
+import {WorkflowIcon} from '@primer/octicons-react'
+import {UnderlinePanels} from '@primer/react/experimental'
 
 function pathsToFileTree(paths: string[], exportMetadataMap: Map<string, ARCExportMetadata>) {
   const root: TreeNode = { name: "root", id: "", type: "folder", children: [] };
@@ -68,7 +71,7 @@ function findNodeAtPath(tree: TreeNode, targetPath: string): TreeNode | null {
 }
 
 // async function findReadme(tree: TreeNode): Promise<string> {
-//   if (tree.name !== "root") 
+//   if (tree.name !== "root")
 //     return "No Readme found";
 //   return readme;
 // }
@@ -112,8 +115,8 @@ async function asyncDataToSearchCache(tree: TreeNode, arc: ARC, setCache: React.
       table.Headers.forEach(header => {
         const term = header.TryGetTerm();
         if (!term) {
-          headers.add({ name: header.toString(), path, type: "header" });        
-        } 
+          headers.add({ name: header.toString(), path, type: "header" });
+        }
         if (term) {
           const nametext = (term as OntologyAnnotation).NameText;
           if (nametext) {
@@ -310,11 +313,14 @@ export default function WebViewer({ jsonString, readmefetch, licensefetch, clear
 
   const [arc, setArc] = useState<ARC | null>(null)
   const [tree, setTree] = useState<TreeNode | null>(null)
+  const [graph, setGraph] = useState<any>(null);
   const [currentTreeNode, setCurrentTreeNode] = useState<TreeNode | null>(null)
   const [loading, setLoading] = useState(true)
   const {setCache} = useSearchCacheContext()
 
   const [sidebarActive, setSidebarActive] = useState(false);
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [graphTabVisited, setGraphTabVisited] = useState(false);
 
   const isSmallScreen = useResponsiveValue({
     narrow: true,
@@ -334,13 +340,14 @@ export default function WebViewer({ jsonString, readmefetch, licensefetch, clear
   useEffect(() => {
     // This is just to simulate a data fetch, in a real application you would fetch this
     // data from an API or some other source.
-    const g = JsonController.LDGraph.fromROCrateJsonString(jsonString);
+    const graphObj = JsonController.LDGraph.fromROCrateJsonString(jsonString);
+    setGraph(graphObj);
     const arc = JsonController.ARC.fromROCrateJsonString(jsonString);
-    const files = g.Nodes.filter(n => ROCrate.LDFile.validate(n, g.TryGetContext() as any));
+    const files = graphObj.Nodes.filter(n => ROCrate.LDFile.validate(n, graphObj.TryGetContext() as any));
     const fileIdExportMetadataMap = new Map<string, ARCExportMetadata>();
     files.forEach(file => {
       const id = file.id;
-      const sha = file.TryGetProperty('http://schema.org/sha256', g.TryGetContext() as any) || file.TryGetProperty('https://schema.org/sha256', g.TryGetContext() as any);
+      const sha = file.TryGetProperty('http://schema.org/sha256', graphObj.TryGetContext() as any) || file.TryGetProperty('https://schema.org/sha256', graphObj.TryGetContext() as any);
       if (id && sha) {
         const contentSize = file.TryGetProperty("contentSize");
         fileIdExportMetadataMap.set(id, { sha256: sha, contentSize: contentSize ? formatFileSize(contentSize) : undefined });
@@ -356,7 +363,7 @@ export default function WebViewer({ jsonString, readmefetch, licensefetch, clear
   }, [setCache, jsonString])
 
   const expandedFolderIds = useMemo(() => {
-    return currentTreeNode?.id ? findPathToNode(tree?.children || [], currentTreeNode.id) ?? [] : []; 
+    return currentTreeNode?.id ? findPathToNode(tree?.children || [], currentTreeNode.id) ?? [] : [];
   }, [tree, currentTreeNode]);
 
   const renderedTree = useMemo(() => (
@@ -374,16 +381,47 @@ export default function WebViewer({ jsonString, readmefetch, licensefetch, clear
           </SideSheet>
         )}
       </div>
-      <SplitPageLayout.Pane 
-        aria-label="Sidebar" 
-        resizable={true} 
+      <SplitPageLayout.Pane
+        aria-label="Sidebar"
+        resizable={true}
         widthStorageKey={"arc-webviewer-sidebar-width"}
-        hidden={!sidebarActive || isSmallScreen as boolean} 
+        hidden={!sidebarActive || isSmallScreen as boolean}
         sticky={true}
       >
-        {renderedTree}
+        {(() => {
+          const handleTabSelect = (tabIndex: number) => {
+            setSelectedTab(tabIndex);
+            if (tabIndex === 1) setGraphTabVisited(true);
+          };
+
+          return (
+            <UnderlinePanels aria-label="Select a tab">
+              <UnderlinePanels.Tab
+                aria-selected={selectedTab === 0}
+                onSelect={() => handleTabSelect(0)}
+              >
+                File Tree
+              </UnderlinePanels.Tab>
+              <UnderlinePanels.Tab
+                aria-selected={selectedTab === 1}
+                onSelect={() => handleTabSelect(1)}
+              >
+                Graph View
+              </UnderlinePanels.Tab>
+              <UnderlinePanels.Panel>{renderedTree}</UnderlinePanels.Panel>
+              <UnderlinePanels.Panel>
+                {graphTabVisited && (
+                  <div style={{ display: selectedTab === 1 ? "block" : "none", width: "100%", height: "100%" }}>
+                    {graph && <GraphViewer graph={graph} />}
+                  </div>
+                )}
+              </UnderlinePanels.Panel>
+            </UnderlinePanels>
+          );
+        })()}
       </SplitPageLayout.Pane>
       <SplitPageLayout.Content>
+
         <Stack>
           <div className="bgColor-default py-2 position-sticky top-0 z-1 d-flex flex-items-start">
             <Stack className="flex-column flex-sm-row flex-items-start flex-sm-items-center" style={{width: "100%"}}>
@@ -392,14 +430,16 @@ export default function WebViewer({ jsonString, readmefetch, licensefetch, clear
                 <TreeSearch navigateTo={navigateTo} />
               </div>
               {currentTreeNode && arc && arc.Title && <FileBreadcrumbs currentTreeNode={currentTreeNode} navigateTo={navigateTo} title={arc.Title} />}
-              {clearJsonCallback &&
-                <IconButton style={{ marginLeft: "auto" }} aria-label="Clear loaded JSON and upload new" variant='danger' icon={XCircleIcon} onClick={() => clearJsonCallback()} />
-              }
+              <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem" }}>
+                {clearJsonCallback &&
+                  <IconButton aria-label="Clear loaded JSON and upload new" variant='danger' icon={XCircleIcon} onClick={() => clearJsonCallback()} />
+                }
+              </div>
             </Stack>
           </div>
           {
             currentTreeNode && currentTreeNode.type === 'file' && arc
-              ? (renderFileComponentByName(currentTreeNode, arc)) 
+              ? (renderFileComponentByName(currentTreeNode, arc))
               : <FileTable loading={loading} currentTreeNode={currentTreeNode} navigateTo={navigateTo} />
           }
           {tree && currentTreeNode && currentTreeNode.name === "root" && currentTreeNode.type === 'folder' &&
