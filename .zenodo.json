@@ -1,6 +1,7 @@
 {
   "creators": [
     {"name": "Frey, Kevin", "affiliation": "RPTU Kaiserslautern-Landau", "orcid": "https://orcid.org/0000-0002-8510-6810" },
+    {"name": "Brilhaus, Dominik ", "affiliation": "Heinrich Heine University Düsseldorf", "orcid": "https://orcid.org/0000-0001-9021-3197"},
     {"name": "Schneider, Kevin", "affiliation": "RPTU Kaiserslautern-Landau", "orcid": "https://orcid.org/0000-0002-2198-5262"},
     {"name": "Mühlhaus, Timo", "affiliation": "RPTU Kaiserslautern-Landau", "orcid": "https://orcid.org/0000-0003-3925-6778"}
   ],
