@@ -1,7 +1,8 @@
 import type { ContentType, FileTypes, FileViewerContent } from "../../util/types";
 import {SkeletonText, UnderlinePanels} from '@primer/react/experimental'
 import { useCachedFiles } from "../../hooks/useCachedFiles";
-import MarkdownRender from "../MarkdownRender";
+import {lazy, Suspense} from "react";
+const MarkdownRender = lazy(() => import("../MarkdownRender"));
 import { useState } from "react";
 
 interface FileViewerContentProps {
@@ -19,7 +20,7 @@ function FileViewerContent({ file, contentType }: FileViewerContentProps) {
       {/* {file && (typeof file === "jsx") && file} */}
       {file && (typeof file === "string") &&
         contentType === "markdown" 
-          ? <MarkdownRender content={file as string} /> 
+          ? <Suspense fallback={<SkeletonText lines={10} />}><MarkdownRender content={file as string} /></Suspense>
           : <div>{file as string}</div>
       }
       {(file instanceof File) &&

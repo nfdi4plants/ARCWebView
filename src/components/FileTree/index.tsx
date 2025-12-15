@@ -1,7 +1,7 @@
 import { TreeView } from "@primer/react";
 import { type TreeNode } from "../../util/types";
 import Icons from "../Icons";
-
+import { memo } from "react";
 interface FileTreeProps {
   tree: TreeNode | null;
   expandedFolderIds: string[];
@@ -10,36 +10,88 @@ interface FileTreeProps {
 }
 
 function isXlsxFile(name: string): boolean {
-  return name.endsWith('.xlsx');
+  return name.endsWith(".xlsx");
 }
 
-export default function FileTree({tree, currentTreeNode, expandedFolderIds, navigateTo}: FileTreeProps) {
+const MemoRenderNode = memo(function RenderNode({
+  node,
+  currentTreeNode,
+  expandedFolderIds = [],
+  navigateTo,
+}: {
+  node: TreeNode;
+  currentTreeNode: TreeNode | null;
+  expandedFolderIds?: string[];
+  navigateTo: (path: string) => void;
+}) {
+  const isFolder = node.type === "folder";
+  const isCurrent = node.id === currentTreeNode?.id;
+  const shouldExpand = expandedFolderIds.includes(node.id);
 
-  const renderNode = (node: TreeNode) => {
-    const isFolder = node.type === "folder";
-    const isCurrent = node.id === currentTreeNode?.id;
-    const shouldExpand = expandedFolderIds.includes(node.id);
-
-    return (
-      <TreeView.Item key={node.id} id={node.id} current={isCurrent} defaultExpanded={shouldExpand} onSelect={() => navigateTo(node.id)}>
-        <TreeView.LeadingVisual>
-          {isFolder ? <TreeView.DirectoryIcon /> : isXlsxFile(node.name) ? <Icons.XlsxIcon /> : <Icons.FileIcon />}
-        </TreeView.LeadingVisual>
-        {node.name}
-        {isFolder && node.children && node.children.length > 0 && (
-          <TreeView.SubTree>
-            {node.children.map(renderNode)}
-          </TreeView.SubTree>
+  return (
+    <TreeView.Item
+      key={node.id}
+      id={node.id}
+      current={isCurrent}
+      defaultExpanded={shouldExpand}
+      onSelect={() => navigateTo(node.id)}
+    >
+      <TreeView.LeadingVisual>
+        {isFolder ? (
+          <TreeView.DirectoryIcon />
+        ) : isXlsxFile(node.name) ? (
+          <Icons.XlsxIcon />
+        ) : (
+          <Icons.FileIcon />
         )}
-      </TreeView.Item>
-    );
-  };
+      </TreeView.LeadingVisual>
+      {node.name}
+      {isFolder && node.children && node.children.length > 0 && (
+        <TreeView.SubTree>
+          {node.children.map((child) => (
+            <RenderNode
+              key={child.id}
+              node={child}
+              currentTreeNode={currentTreeNode}
+              expandedFolderIds={expandedFolderIds}
+              navigateTo={navigateTo}
+            />
+          ))}
+        </TreeView.SubTree>
+      )}
+    </TreeView.Item>
+  );
+}, (nodePropsPrev, nodePropsNext) => {
+  return (
+    nodePropsPrev.node === nodePropsNext.node &&
+    nodePropsPrev.currentTreeNode === nodePropsNext.currentTreeNode &&
+    nodePropsPrev.expandedFolderIds === nodePropsNext.expandedFolderIds
+  );
+});
+
+/// Can be improved by splitting "renderNode" into its own component with memoization. Accessing "currentNode" from a context. This would
+export default function FileTree({
+  tree,
+  currentTreeNode,
+  expandedFolderIds,
+  navigateTo,
+}: FileTreeProps) {
+
 
   if (!tree || !tree.children || !currentTreeNode) {
     return <div>No files to display</div>;
   }
 
-  return <TreeView aria-label="File Tree">
-    {tree.children?.map(renderNode)}
-  </TreeView>;
+  return (
+    <TreeView aria-label="File Tree">{tree.children?.map(node =>
+      
+      <MemoRenderNode
+        key={node.id}
+        node={node}
+        currentTreeNode={currentTreeNode}
+        expandedFolderIds={expandedFolderIds}
+        navigateTo={navigateTo}
+      />
+    )}</TreeView>
+  );
 }

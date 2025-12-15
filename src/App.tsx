@@ -1,18 +1,19 @@
-import WebViewer from './components/WebViewer';
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, lazy, Suspense } from 'react';
+const WebViewer = lazy(() => import('./components/WebViewer'));
 import {Banner, Blankslate} from '@primer/react/experimental'
 import { FileCacheProvider, SearchCacheProvider } from './ContextProvider';
 import { marked } from 'marked';
-import {Button, Stack} from '@primer/react'
+import {Button, Spinner, Stack} from '@primer/react'
 import {UploadIcon, SearchIcon} from '@primer/octicons-react'
 
-function ErrorBanner({error}: {error: string}) {
+function ErrorBanner({error, clearError}: {error: string, clearError: () => void}) {
   return (
     <Banner
       aria-label="Error"
       title="Error"
       description={error}
       variant="critical"
+      onDismiss={clearError}
     />
   )
 }
@@ -78,6 +79,14 @@ interface AppProps {
   licensefetch?: () => Promise<string>;
 }
 
+function SkeletonTable() {
+  return (
+    <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh'}}>
+      <Spinner size="large" />
+    </div>
+  )
+}
+
 function App({ jsonString: outerJson, readmefetch, licensefetch }: AppProps) {
 
   const [jsonString, setJsonString] = useState<string | null>(null);
@@ -135,14 +144,14 @@ function App({ jsonString: outerJson, readmefetch, licensefetch }: AppProps) {
     <FileCacheProvider>
       <SearchCacheProvider>
         {
-          error && <ErrorBanner error={error} />
+          error && <ErrorBanner error={error} clearError={() => setError(null)} />
         }
         {
           loading || !jsonString 
             ? <BlankSlate handleClickExampleData={handleClickExampleData} setJsonString={setJsonString} /> 
-            : <>
-              <WebViewer jsonString={jsonString} readmefetch={exampleData ? loadExmpReadme : readmefetch} licensefetch={licensefetch} clearJsonCallback={clear}/>
-            </>
+            : <Suspense fallback={<SkeletonTable />}>
+                <WebViewer jsonString={jsonString} readmefetch={exampleData ? loadExmpReadme : readmefetch} licensefetch={licensefetch} clearJsonCallback={clear}/>
+              </Suspense>
         }
       </SearchCacheProvider>
     </FileCacheProvider>

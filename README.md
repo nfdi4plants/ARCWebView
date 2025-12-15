@@ -33,7 +33,7 @@ createRoot(document.getElementById('root')!).render(
 
 ```
 
-# development
+# Development
 
 This component uses GitHubs Primer ProductUI.
 
@@ -64,4 +64,4 @@ Find more information below:
 
 ## Build WebApp 
 
-1. build web app using `npm run build`
+1. Build web app using `npm run build`

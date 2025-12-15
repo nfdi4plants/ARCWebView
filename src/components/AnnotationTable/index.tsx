@@ -49,8 +49,7 @@ export default function AnnotationTable({table}: AnnotationTableProps) {
       rowObject[header as keyof UniqueRow] = row[colIndex];
     });
     return rowObject as UniqueRow;
-  })
-
+  });
 
   const pageSize = 20
   const [pageIndex, setPageIndex] = React.useState(0)
