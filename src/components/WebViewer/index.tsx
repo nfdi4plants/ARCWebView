@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type JSX } from "react";
 import {
   JsonController,
   type ARC,
@@ -31,6 +31,7 @@ import FileTree from "../FileTree";
 import Icons from "../Icons";
 import { XCircleIcon } from "@primer/octicons-react";
 import { Banner } from "@primer/react/experimental";
+import { useMemoAsync } from "../../hooks/useMemoAsync";
 
 function pathsToFileTree(
   paths: string[],
@@ -368,8 +369,8 @@ function findPathToNode(
 
 function navigateToPathInTree(
   path: string,
-  tree: TreeNode | null,
-  setCurrentTreeNode: React.Dispatch<React.SetStateAction<TreeNode | null>>
+  tree: TreeNode | undefined,
+  setCurrentTreeNode: React.Dispatch<React.SetStateAction<TreeNode | undefined>>
 ) {
   if (!tree) return;
   const node = findNodeAtPath(tree, path);
@@ -417,11 +418,8 @@ export default function WebViewer({
   licensefetch,
   clearJsonCallback,
 }: WebViewerProps) {
-  const [arc, setArc] = useState<ARC | null>(null);
-  const [tree, setTree] = useState<TreeNode | null>(null);
-  const [currentTreeNode, setCurrentTreeNode] = useState<TreeNode | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // const [arc, setArc] = useState<ARC | null>(null);
+  // const [tree, setTree] = useState<TreeNode | null>(null);
   const { setCache } = useSearchCacheContext();
 
   const [sidebarActive, setSidebarActive] = useState(false);
@@ -435,24 +433,19 @@ export default function WebViewer({
     false
   );
 
-  const navigateTo = useMemo(() => {
-    return (path: string) => {
-      navigateToPathInTree(path, tree, setCurrentTreeNode);
-      if (isSmallScreen) {
-        setSidebarActive(false);
-      }
-    };
-  }, [tree, isSmallScreen]);
+  const ldGraph = useMemoAsync(async () => {
+    const r = JsonController.LDGraph.fromROCrateJsonString(jsonString);
+    return r;
+  }, [jsonString]);
 
-  useEffect(() => {
-    setError(null);
-    try {
-      console.log("Parsing ARC JSON LD Graph");
-      const g = JsonController.LDGraph.fromROCrateJsonString(jsonString);
-      console.log("Parsing ARC JSON");
-      const arc = JsonController.ARC.fromROCrateJsonString(jsonString);
-      const files = g.Nodes.filter((n) =>
-        ROCrate.LDFile.validate(n, g.TryGetContext() as any)
+  const arc = useMemoAsync(async () => {
+    return JsonController.ARC.fromROCrateJsonString(jsonString);    
+  }, [jsonString]);
+
+  const tree = useMemoAsync(async () => {
+    if (arc.value && ldGraph.value) {
+      const files = ldGraph.value.Nodes.filter((n) =>
+        ROCrate.LDFile.validate(n, ldGraph.value?.TryGetContext() as any)
       );
       const fileIdExportMetadataMap = new Map<string, ARCExportMetadata>();
       files.forEach((file) => {
@@ -460,11 +453,11 @@ export default function WebViewer({
         const sha =
           file.TryGetProperty(
             "http://schema.org/sha256",
-            g.TryGetContext() as any
+            ldGraph.value?.TryGetContext() as any
           ) ||
           file.TryGetProperty(
             "https://schema.org/sha256",
-            g.TryGetContext() as any
+            ldGraph.value?.TryGetContext() as any
           );
         if (id && sha) {
           const contentSize = file.TryGetProperty("contentSize");
@@ -474,30 +467,48 @@ export default function WebViewer({
           });
         }
       });
-      setArc(arc);
-      const paths = arc.FileSystem.Tree.ToFilePaths(true);
+      const paths = arc.value.FileSystem.Tree.ToFilePaths(true);
       const tree = pathsToFileTree(paths, fileIdExportMetadataMap);
-      setTree(tree);
-      setCurrentTreeNode(tree);
-      asyncDataToSearchCache(tree, arc, setCache);
-    } catch (e) {
-      console.error("Error parsing ARC JSON:", e);
-      setError("Failed to parse ARC JSON data. Check the console for details.");
-    } finally {
-      setLoading(false);
+      return tree;
+    } else {
+      return undefined;
     }
-  }, [setCache, jsonString]);
+  }, [arc, ldGraph]);
+
+  const [currentTreeNode, setCurrentTreeNode] = useState<TreeNode | undefined>(tree.value);
+
+  const navigateTo = useMemo(() => {
+    return (path: string) => {
+      if (!tree.value) return;
+      navigateToPathInTree(path, tree.value, setCurrentTreeNode);
+      if (isSmallScreen) {
+        setSidebarActive(false);
+      }
+    };
+  }, [tree, isSmallScreen]);
+
+  useEffect(() => {
+    if (tree.value) {
+      setCurrentTreeNode(tree.value);
+    }
+  }, [tree.value]);
+
+  useEffect(() => {
+    if (tree.value && arc.value) {
+      asyncDataToSearchCache(tree.value, arc.value, setCache);
+    }
+  }, [tree, arc, setCache]);
 
   const expandedFolderIds = useMemo(() => {
     return currentTreeNode?.id
-      ? findPathToNode(tree?.children || [], currentTreeNode.id) ?? []
+      ? findPathToNode(tree.value?.children || [], currentTreeNode.id) ?? []
       : [];
   }, [tree, currentTreeNode]);
 
   const renderedTree = useMemo(
     () => (
       <FileTree
-        tree={tree}
+        tree={tree.value}
         currentTreeNode={currentTreeNode}
         expandedFolderIds={expandedFolderIds}
         navigateTo={navigateTo}
@@ -505,6 +516,15 @@ export default function WebViewer({
     ),
     [tree, currentTreeNode, expandedFolderIds, navigateTo]
   );
+
+  const error: string | undefined = [
+    ldGraph.error?.message,
+    arc.error?.message,
+    tree.error?.message,
+  ]
+    .filter(Boolean)
+    .join("\n") || undefined;
+
 
   return error ? (
     <div
@@ -565,11 +585,11 @@ export default function WebViewer({
                 />
                 <TreeSearch navigateTo={navigateTo} />
               </div>
-              {currentTreeNode && arc && arc.Title && (
+              {currentTreeNode && arc.value && arc.value.Title && (
                 <FileBreadcrumbs
                   currentTreeNode={currentTreeNode}
                   navigateTo={navigateTo}
-                  title={arc.Title}
+                  title={arc.value.Title}
                 />
               )}
               {clearJsonCallback && (
@@ -583,19 +603,19 @@ export default function WebViewer({
               )}
             </Stack>
           </div>
-          {currentTreeNode && currentTreeNode.type === "file" && arc ? (
+          {currentTreeNode && currentTreeNode.type === "file" && arc.value ? (
             <RenderFileComponentByName
               currentTreeNode={currentTreeNode}
-              arc={arc}
+              arc={arc.value}
             />
           ) : (
             <FileTable
-              loading={loading}
+              loading={arc.loading}
               currentTreeNode={currentTreeNode}
               navigateTo={navigateTo}
             />
           )}
-          {tree &&
+          {tree.value &&
             currentTreeNode &&
             currentTreeNode.name === "root" &&
             currentTreeNode.type === "folder" &&

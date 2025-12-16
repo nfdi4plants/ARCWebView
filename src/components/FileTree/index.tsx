@@ -3,9 +3,9 @@ import { type TreeNode } from "../../util/types";
 import Icons from "../Icons";
 import { memo } from "react";
 interface FileTreeProps {
-  tree: TreeNode | null;
+  tree: TreeNode | undefined;
   expandedFolderIds: string[];
-  currentTreeNode: TreeNode | null;
+  currentTreeNode: TreeNode | undefined;
   navigateTo: (path: string) => void;
 }
 
@@ -20,7 +20,7 @@ const MemoRenderNode = memo(function RenderNode({
   navigateTo,
 }: {
   node: TreeNode;
-  currentTreeNode: TreeNode | null;
+  currentTreeNode: TreeNode | undefined;
   expandedFolderIds?: string[];
   navigateTo: (path: string) => void;
 }) {

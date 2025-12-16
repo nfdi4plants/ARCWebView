@@ -4,7 +4,7 @@ import { type TreeNode } from '../../util/types'
 import Icons from '../Icons'
 
 
-function sortTreeNode(node: TreeNode | null): TreeNode[] {
+function sortTreeNode(node: TreeNode | undefined): TreeNode[] {
   if (!node) return [];
   if (!node.children) return [];
 
@@ -106,7 +106,7 @@ const mkHeader = ({navigateTo, responsiveValue}: HeaderProps) => {
           return (
             row.sha256 
               ? <IconButton
-                as='a'
+                as="a"
                 href={`https://lfs-resolver.nfdi4plants.org/presigned-url/?oid=${row.sha256}`}
                 target='_blank'
                 aria-label={`Download: ${row.name}`}
@@ -123,7 +123,7 @@ const mkHeader = ({navigateTo, responsiveValue}: HeaderProps) => {
 
 interface FileTableProps {
   loading: boolean;
-  currentTreeNode: TreeNode | null;
+  currentTreeNode: TreeNode | undefined;
   navigateTo: (path: string) => void;
 }
 
