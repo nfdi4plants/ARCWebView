@@ -13,10 +13,10 @@ interface MyMenuItem {
     text: string;
     id: string;
     path: string;
-    leadingVisual: () => JSX.Element;
+    leadingVisual: () => React.ReactNode;
 }
 
-function cacheTypeToIcon(type: "file" | "header" | "isa-title" | "isa-table" | "person"): () => JSX.Element {
+function cacheTypeToIcon(type: "file" | "header" | "isa-title" | "isa-table" | "person"): () => React.ReactNode {
     switch (type) {
         case "file":
             return () => <Icons.FileIcon />;

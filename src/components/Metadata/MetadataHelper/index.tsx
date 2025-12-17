@@ -61,7 +61,7 @@ export function PersonsField({ persons }: { persons: Person[] }) {
 function PublicationField({ publication }: { publication: Publication }) {
   return (
     <div className="border p-2 rounded-2">
-      <Heading as={"h4"}>{publication.Title}</Heading>
+      <Heading as='h4'>{publication.Title}</Heading>
       <MetadataField label="Status" exists={!!publication.Status} as='h5'>
         <Text>{publication.Status?.NameText}</Text>
       </MetadataField>

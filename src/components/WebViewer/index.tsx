@@ -15,6 +15,7 @@ import {
     IconButton,
     useResponsiveValue,
     Dialog,
+    Banner
 } from "@primer/react";
 import {
     type ContentType,
@@ -30,7 +31,6 @@ import ARCMetadata from "../Metadata/ARCMetadata";
 import FileTree from "../FileTree";
 import Icons from "../Icons";
 import { XCircleIcon } from "@primer/octicons-react";
-import { Banner } from "@primer/react/experimental";
 import { useMemoAsync } from "../../hooks/useMemoAsync";
 
 function pathsToFileTree(

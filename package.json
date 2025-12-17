@@ -35,7 +35,9 @@
       "styles": "./dist/arc-web-view.css"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
@@ -51,7 +53,7 @@
     "@nfdi4plants/arctrl": "^3.0.0-beta.14",
     "@primer/css": "^22.0.2",
     "@primer/primitives": "^11.0.0",
-    "@primer/react": "^37.29.0",
+    "@primer/react": "^38.6.1",
     "marked": "^16.1.1",
     "mermaid": "^11.9.0",
     "styled-components": "^5.3.11"
@@ -62,6 +64,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
+    "@types/node": "^25.0.3",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",

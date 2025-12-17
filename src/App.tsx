@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef, useCallback, lazy, Suspense } from 'react';
 const WebViewer = lazy(() => import('./components/WebViewer'));
-import {Banner, Blankslate} from '@primer/react/experimental'
+import {Blankslate} from '@primer/react/experimental'
 import { FileCacheProvider, SearchCacheProvider } from './ContextProvider';
 import { marked } from 'marked';
-import {Button, Spinner, Stack} from '@primer/react'
+import {Button, Spinner, Stack, Banner} from '@primer/react'
 import {UploadIcon, SearchIcon} from '@primer/octicons-react'
 
 function ErrorBanner({error, clearError}: {error: string, clearError: () => void}) {
