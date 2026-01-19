@@ -28,6 +28,8 @@ import AnnotationTable from "../AnnotationTable";
 import AssayMetadata from "../Metadata/AssayMetadata";
 import StudyMetadata from "../Metadata/StudyMetadata";
 import ARCMetadata from "../Metadata/ARCMetadata";
+import RunMetadata from "../Metadata/RunMetadata";
+import WorkflowMetadata from "../Metadata/WorkflowMetadata";
 import FileTree from "../FileTree";
 import Icons from "../Icons";
 import { XCircleIcon } from "@primer/octicons-react";
@@ -232,6 +234,63 @@ async function asyncDataToSearchCache(
             headers.add({ name, path: investigationPath, type: "person" });
         }
     });
+    arc.Runs.forEach((run) => {
+        const path = `runs/${run.Identifier}/isa.run.xlsx`;
+        headers.add({ name: run.Identifier, path, type: "isa-title" });
+        run.Performers.forEach((performer) => {
+            if (performer.ORCID) {
+                headers.add({ name: performer.ORCID, path, type: "person" });
+            }
+            const name = [
+                performer.FirstName,
+                performer.MidInitials,
+                performer.LastName,
+            ]
+                .filter(Boolean)
+                .join(" ");
+            if (name) {
+                headers.add({ name, path, type: "person" });
+            }
+        });
+        run.Tables.forEach((table) => {
+            headers.add({ name: table.Name, path, type: "isa-table" });
+            table.Headers.forEach((header) => {
+                const term = header.TryGetTerm();
+                if (!term) {
+                    headers.add({
+                        name: header.toString(),
+                        path,
+                        type: "header",
+                    });
+                }
+                if (term) {
+                    const nametext = (term as OntologyAnnotation).NameText;
+                    if (nametext) {
+                        headers.add({ name: nametext, path, type: "header" });
+                    }
+                }
+            });
+        });
+    });
+    arc.Workflows.forEach((workflow) => {
+        const path = `workflows/${workflow.Identifier}/isa.workflow.xlsx`;
+        headers.add({ name: workflow.Identifier, path, type: "isa-title" });
+        workflow.Contacts.forEach((contact) => {
+            if (contact.ORCID) {
+                headers.add({ name: contact.ORCID, path, type: "person" });
+            }
+            const name = [
+                contact.FirstName,
+                contact.MidInitials,
+                contact.LastName,
+            ]
+                .filter(Boolean)
+                .join(" ");
+            if (name) {
+                headers.add({ name, path, type: "person" });
+            }
+        });
+    });
     setCache((prevCache) => [...prevCache, ...Array.from(headers)]);
     return;
 }
@@ -309,6 +368,73 @@ function FileViewerStudy({
     );
 }
 
+function FileViewerRun({
+    currentTreeNode,
+    arc,
+}: {
+    currentTreeNode: TreeNode;
+    arc: ARC;
+}): JSX.Element {
+    const runIdent = currentTreeNode.id.match(
+        /runs\/([^/]+)\/isa\.run\.xlsx/
+    );
+
+    const run = arc.Runs.find((r) => r.Identifier === runIdent?.[1]);
+
+    if (!run) {
+        return <div>Run not found</div>;
+    }
+
+    return (
+        <FileViewer
+            nodes={[
+                {
+                    node: currentTreeNode,
+                    name: "Metadata",
+                    component: <RunMetadata run={run} />,
+                    contentType: "jsx",
+                },
+                ...run.Tables.map((table) => ({
+                    node: currentTreeNode,
+                    name: table.Name,
+                    contentType: "jsx" as ContentType,
+                    component: <AnnotationTable table={table} />,
+                })),
+            ]}
+        />
+    );
+}
+
+function FileViewerWorkflow({
+    currentTreeNode,
+    arc,
+}: {
+    currentTreeNode: TreeNode;
+    arc: ARC;
+}): JSX.Element {
+    const workflowIdent = currentTreeNode.id.match(
+        /workflows\/([^/]+)\/isa\.workflow\.xlsx/
+    );
+
+    const workflow = arc.Workflows.find((w) => w.Identifier === workflowIdent?.[1]);
+
+    if (!workflow) {
+        return <div>Workflow not found</div>;
+    }
+
+    return (
+        <FileViewer
+            nodes={[
+                {
+                    node: currentTreeNode,
+                    component: <WorkflowMetadata workflow={workflow} />,
+                    contentType: "jsx",
+                },
+            ]}
+        />
+    );
+}
+
 function FileViewerInvestigation({
     currentTreeNode,
     arc,
@@ -351,6 +477,14 @@ function RenderFileComponentByName({
         case "isa.assay.xlsx":
             return (
                 <FileViewerAssay currentTreeNode={currentTreeNode} arc={arc} />
+            );
+        case "isa.run.xlsx":
+            return (
+                <FileViewerRun currentTreeNode={currentTreeNode} arc={arc} />
+            );
+        case "isa.workflow.xlsx":
+            return (
+                <FileViewerWorkflow currentTreeNode={currentTreeNode} arc={arc} />
             );
         default:
             return (
