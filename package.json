@@ -50,7 +50,7 @@
     "build:lib": "tsc -b && vite build --config vite.config.lib.ts"
   },
   "dependencies": {
-    "@nfdi4plants/arctrl": "^3.0.0-beta.14",
+    "@nfdi4plants/arctrl": "^3.0.0-beta.16",
     "@primer/css": "^22.0.2",
     "@primer/primitives": "^11.0.0",
     "@primer/react": "^38.6.1",
