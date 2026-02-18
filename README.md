@@ -1,7 +1,7 @@
 # @nfdi4plants/arc-web-view 
 
 ![NPM Version](https://img.shields.io/npm/v/%40nfdi4plants%2Farc-web-view)
-[![DOI](https://zenodo.org/badge/380251011.svg)](https://doi.org/10.5281/zenodo.8302661)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17937200.svg)](https://doi.org/10.5281/zenodo.17937200)
 
 An Annotated Research Context web viewer in the style of GitHub's Primer ProductUI.
 
