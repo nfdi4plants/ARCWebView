@@ -35,6 +35,10 @@ import Icons from "../Icons";
 import { XCircleIcon } from "@primer/octicons-react";
 import { useMemoAsync } from "../../hooks/useMemoAsync";
 
+function normalizePath(path: string): string {
+    return path.replace(/\\/g, "/").replace(/^.?\/+/, "");
+}
+
 function pathsToFileTree(
     paths: string[],
     exportMetadataMap: Map<string, ARCExportMetadata>
@@ -621,6 +625,7 @@ export default function WebViewer({
                     ldGraph.value?.TryGetContext() as any
                 )
             );
+            console.log(files)
             const fileIdExportMetadataMap = new Map<
                 string,
                 ARCExportMetadata
@@ -638,11 +643,12 @@ export default function WebViewer({
                     );
                 if (id && sha) {
                     const contentSize = file.TryGetProperty("contentSize");
-                    fileIdExportMetadataMap.set(id, {
+                    const normalizedPathFromId = normalizePath(id);
+                    fileIdExportMetadataMap.set(normalizedPathFromId, {
                         sha256: sha,
                         contentSize: contentSize
-                            ? formatFileSize(contentSize)
-                            : undefined,
+                        ? formatFileSize(contentSize)
+                        : undefined,
                     });
                 }
             });
