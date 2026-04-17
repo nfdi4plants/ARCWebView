@@ -1,14 +1,12 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { marked } from 'marked';
-import mermaid from 'mermaid';
+import mermaid from '../../util/mermaid';
 import {SkeletonText} from '@primer/react/experimental'
 
 interface MarkdownRenderProps {
   // must be markdown string
   content: string;
 }
-
-mermaid.initialize({startOnLoad: false})
 
 export default function MarkdownRender({content}: MarkdownRenderProps) { 
 

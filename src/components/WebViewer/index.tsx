@@ -806,6 +806,7 @@ export default function WebViewer({
                             loading={arc.loading}
                             currentTreeNode={currentTreeNode}
                             navigateTo={navigateTo}
+                            ldGraph={ldGraph.value}
                         />
                     )}
                     {tree.value &&
