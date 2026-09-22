@@ -107,7 +107,7 @@ const mkHeader = ({navigateTo, responsiveValue}: HeaderProps) => {
             row.sha256 
               ? <IconButton
                 as="a"
-                href={`https://lfs-resolver.nfdi4plants.org/presigned-url/?oid=${row.sha256}`}
+                href={`https://lfs-resolver.nfdi4plants.org/presigned-url/?oid=${row.sha256}&outfile=${row.name}`}
                 target='_blank'
                 aria-label={`Download: ${row.name}`}
                 title={`Download: ${row.name}`}
