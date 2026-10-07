@@ -27,8 +27,8 @@ export default defineConfig({
         "@primer/react",
         "marked",
         "mermaid",
-        'react', 
-        'react-dom',
+        /^react($|\/)/,
+        /^react-dom($|\/)/,
         "styled-components"
       ]
     },
