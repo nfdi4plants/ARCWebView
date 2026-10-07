@@ -16,6 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 1.2.0 - 2026-10-07
+
+### ✨ Added
+
+- Added file name support to the download functionality. (by @j-bauer)
+
+### 🐛 Fixed
+
+- Correctly externalize React and React DOM in the build configuration. (by @dinayun)
+
 ## 1.1.0 - 2026-01-19
 
 ### ✨ Added
