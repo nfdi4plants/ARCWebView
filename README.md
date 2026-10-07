@@ -59,7 +59,13 @@ Find more information below:
 1. Apply changes
 2. Change version in `package.json`
 3. Build component library `npm run build:lib`
-4. Publish component library `npm publish --access public`
+
+> [!NOTE]  
+> Remember to login before the next step (verify with `npm whoami`).
+>
+> `npm login` to authenticate your npm account before publishing.
+
+4. Publish component library `npm publish --access public` (or use `npm publish --access public --tag next` for prerelease) 
 
 ## Deploy to GitHub Pages
 

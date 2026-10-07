@@ -1,7 +1,8 @@
 import { StrictMode} from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
-import { BaseStyles, ThemeProvider } from '@primer/react'
+import { BaseStyles } from '@primer/react'
+import { ThemeProvider } from '@primer/react/next'
 
 declare global {
   interface Window {

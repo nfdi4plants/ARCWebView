@@ -593,8 +593,7 @@ export default function WebViewer({
     licensefetch,
     clearJsonCallback,
 }: WebViewerProps) {
-    // const [arc, setArc] = useState<ARC | null>(null);
-    // const [tree, setTree] = useState<TreeNode | null>(null);
+
     const { setCache } = useSearchCacheContext();
 
     const [sidebarActive, setSidebarActive] = useState(false);
@@ -653,7 +652,7 @@ export default function WebViewer({
                 }
             });
             const paths = arc.value.FileSystem.Tree.ToFilePaths(true);
-            const tree = pathsToFileTree(paths, fileIdExportMetadataMap);
+            const tree = pathsToFileTree(Array.from(paths), fileIdExportMetadataMap);
             return tree;
         } else {
             return undefined;
