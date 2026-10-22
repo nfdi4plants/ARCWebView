@@ -25,6 +25,8 @@ export default defineConfig({
         "@primer/css",
         "@primer/primitives",
         "@primer/react",
+        "elkjs",
+        /^elkjs\//,
         "marked",
         "mermaid",
         /^react($|\/)/,

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type JSX } from "react";
+import { useEffect, useMemo, useRef, useState, type JSX } from "react";
 import {
     JsonController,
     type ARC,
@@ -9,13 +9,25 @@ import {
 import FileViewer from "../FileViewer";
 import FileTable from "../FileTable";
 import FileBreadcrumbs from "../FileBreadcrumbs";
+import ProvenanceGraph from "../ProvenanceGraph";
+import { errorMessage } from "../ProvenanceGraph/errorMessage";
+import { buildProvenanceIndex } from "../../provenance/buildIndex";
+import {
+    buildDataNodePaths,
+    graphToViewerTarget,
+    viewerToNavigation,
+    type ViewerTarget,
+} from "../../provenance/linking";
+import { START_NAVIGATION, type Navigation } from "../../provenance/navigation";
 import {
     SplitPageLayout,
     Stack,
+    Button,
     IconButton,
     useResponsiveValue,
     Dialog,
-    Banner
+    Banner,
+    Heading
 } from "@primer/react";
 import {
     type ContentType,
@@ -32,7 +44,7 @@ import RunMetadata from "../Metadata/RunMetadata";
 import WorkflowMetadata from "../Metadata/WorkflowMetadata";
 import FileTree from "../FileTree";
 import Icons from "../Icons";
-import { XCircleIcon } from "@primer/octicons-react";
+import { ChevronDownIcon, ChevronUpIcon, XCircleIcon } from "@primer/octicons-react";
 import { useMemoAsync } from "../../hooks/useMemoAsync";
 
 function normalizePath(path: string): string {
@@ -299,13 +311,22 @@ async function asyncDataToSearchCache(
     return;
 }
 
+// Threads the open tab of an isa file through the viewers: the tab to open first, and a callback for each
+// tab that the user selects.
+interface TableTabProps {
+    initialTable?: string;
+    onSelectTab?: (name: string | undefined) => void;
+}
+
 function FileViewerAssay({
     currentTreeNode,
     arc,
+    initialTable,
+    onSelectTab,
 }: {
     currentTreeNode: TreeNode;
     arc: ARC;
-}): JSX.Element {
+} & TableTabProps): JSX.Element {
     const assayIdent = currentTreeNode.id.match(
         /assays\/([^/]+)\/isa\.assay\.xlsx/
     );
@@ -332,6 +353,8 @@ function FileViewerAssay({
                     component: <AnnotationTable table={table} />,
                 })),
             ]}
+            initialTable={initialTable}
+            onSelectTab={onSelectTab}
         />
     );
 }
@@ -339,10 +362,12 @@ function FileViewerAssay({
 function FileViewerStudy({
     currentTreeNode,
     arc,
+    initialTable,
+    onSelectTab,
 }: {
     currentTreeNode: TreeNode;
     arc: ARC;
-}): JSX.Element {
+} & TableTabProps): JSX.Element {
     const studyIdent = currentTreeNode.id.match(
         /studies\/([^/]+)\/isa\.study\.xlsx/
     );
@@ -368,6 +393,8 @@ function FileViewerStudy({
                     component: <AnnotationTable table={table} />,
                 })),
             ]}
+            initialTable={initialTable}
+            onSelectTab={onSelectTab}
         />
     );
 }
@@ -375,10 +402,12 @@ function FileViewerStudy({
 function FileViewerRun({
     currentTreeNode,
     arc,
+    initialTable,
+    onSelectTab,
 }: {
     currentTreeNode: TreeNode;
     arc: ARC;
-}): JSX.Element {
+} & TableTabProps): JSX.Element {
     const runIdent = currentTreeNode.id.match(
         /runs\/([^/]+)\/isa\.run\.xlsx/
     );
@@ -405,6 +434,8 @@ function FileViewerRun({
                     component: <AnnotationTable table={table} />,
                 })),
             ]}
+            initialTable={initialTable}
+            onSelectTab={onSelectTab}
         />
     );
 }
@@ -462,10 +493,12 @@ function FileViewerInvestigation({
 function RenderFileComponentByName({
     currentTreeNode,
     arc,
+    initialTable,
+    onSelectTab,
 }: {
     currentTreeNode: TreeNode;
     arc: ARC;
-}): JSX.Element {
+} & TableTabProps): JSX.Element {
     switch (currentTreeNode.name) {
         case "isa.investigation.xlsx":
             return (
@@ -476,15 +509,30 @@ function RenderFileComponentByName({
             );
         case "isa.study.xlsx":
             return (
-                <FileViewerStudy currentTreeNode={currentTreeNode} arc={arc} />
+                <FileViewerStudy
+                    currentTreeNode={currentTreeNode}
+                    arc={arc}
+                    initialTable={initialTable}
+                    onSelectTab={onSelectTab}
+                />
             );
         case "isa.assay.xlsx":
             return (
-                <FileViewerAssay currentTreeNode={currentTreeNode} arc={arc} />
+                <FileViewerAssay
+                    currentTreeNode={currentTreeNode}
+                    arc={arc}
+                    initialTable={initialTable}
+                    onSelectTab={onSelectTab}
+                />
             );
         case "isa.run.xlsx":
             return (
-                <FileViewerRun currentTreeNode={currentTreeNode} arc={arc} />
+                <FileViewerRun
+                    currentTreeNode={currentTreeNode}
+                    arc={arc}
+                    initialTable={initialTable}
+                    onSelectTab={onSelectTab}
+                />
             );
         case "isa.workflow.xlsx":
             return (
@@ -554,6 +602,15 @@ function navigateToPathInTree(
     } else {
         console.warn(`Node not found for path: ${path}`);
     }
+}
+
+// The tooltip of the button that opens a place in the file viewer. The root has no path, so it shows as the
+// title of the ARC.
+function viewerTargetTitle(target: ViewerTarget, arcTitle: string | undefined): string {
+    const place = target.path === "" ? arcTitle || "ARC root" : target.path;
+    return target.table === undefined
+        ? `Open ${place}`
+        : `Open ${place}, table ${target.table}`;
 }
 
 interface WebViewerProps {
@@ -663,15 +720,131 @@ export default function WebViewer({
         TreeNode | undefined
     >(tree.value);
 
+    // The generation counts the indexes built so far. It keys the provenance graph, so a new ARC mounts a
+    // fresh explorer with clean error, canvas, expansion and scroll state.
+    const generation = useRef(0);
+    // A new index counts as another ARC and resets the graph navigation, so the index keeps its identity
+    // while the ARC stays the same.
+    const built = useMemo(() => {
+        if (!arc.value) return undefined;
+        const key = ++generation.current;
+        try {
+            return { key, index: buildProvenanceIndex(arc.value) };
+        } catch (error) {
+            console.error("Could not build the provenance index", error);
+            return { key, error: errorMessage(error) };
+        }
+    }, [arc.value]);
+    const index = built?.index;
+    const dataNodePaths = useMemo(
+        () => (index ? buildDataNodePaths(index) : undefined),
+        [index]
+    );
+
+    // The graph navigation lives here, so the viewer can set it. After a navigation that starts in the graph
+    // its content takes focus. After one that starts in the viewer it does not.
+    const [graphNav, setGraphNav] = useState<Navigation>(START_NAVIGATION);
+    const [graphFocus, setGraphFocus] = useState(false);
+    // A new index is another ARC, so the selection of the old one must not outlive it. React lets a
+    // component reset state while it renders, so the explorer draws nothing of the old selection.
+    const [seenIndex, setSeenIndex] = useState(index);
+    if (seenIndex !== index) {
+        setSeenIndex(index);
+        setGraphNav(START_NAVIGATION);
+        setGraphFocus(false);
+    }
+
+    // The name of the open tab of the current isa file. A request seeds the tab that a freshly mounted
+    // file viewer opens, and its sequence number remounts the viewer for a new request.
+    const [selectedTable, setSelectedTable] = useState<string | undefined>(
+        undefined
+    );
+    const [tableRequest, setTableRequest] = useState<{
+        table?: string;
+        seq: number;
+    }>({ seq: 0 });
+
+    const currentTreeNodeId = currentTreeNode?.id;
     const navigateTo = useMemo(() => {
         return (path: string) => {
             if (!tree.value) return;
+            const target = findNodeAtPath(tree.value, path);
             navigateToPathInTree(path, tree.value, setCurrentTreeNode);
+            // The file that is already open keeps its tab, and a path the tree does not have changes nothing.
+            if (target !== null && target.id !== currentTreeNodeId) {
+                setSelectedTable(undefined);
+                // An old request must not seed the tab of the next isa file that opens.
+                setTableRequest((request) =>
+                    request.table === undefined
+                        ? request
+                        : { ...request, table: undefined }
+                );
+            }
             if (isSmallScreen) {
                 setSidebarActive(false);
             }
         };
-    }, [tree, isSmallScreen]);
+    }, [tree, isSmallScreen, currentTreeNodeId]);
+
+    const viewerRef = useRef<HTMLDivElement>(null);
+    const provenanceRef = useRef<HTMLElement>(null);
+    const provenanceHeadingRef = useRef<HTMLHeadingElement>(null);
+    const viewerHeaderRef = useRef<HTMLDivElement>(null);
+    const [graphVisible, setGraphVisible] = useState(true);
+
+    const hasPath = useMemo(() => {
+        return (path: string) =>
+            tree.value !== undefined &&
+            (path === "" || findNodeAtPath(tree.value, path) !== null);
+    }, [tree.value]);
+
+    // Where the "Show in file viewer" button leads, and where the "Show in provenance graph" button leads.
+    const viewerTarget = useMemo(
+        () => (index ? graphToViewerTarget(graphNav, index, hasPath) : undefined),
+        [graphNav, index, hasPath]
+    );
+    const graphTarget = useMemo(
+        () =>
+            index && dataNodePaths && currentTreeNode
+                ? viewerToNavigation(
+                      currentTreeNode.id,
+                      selectedTable,
+                      index,
+                      dataNodePaths
+                  )
+                : undefined,
+        [index, dataNodePaths, currentTreeNode, selectedTable]
+    );
+
+    const openInViewer = (target: ViewerTarget) => {
+        if (!tree.value) return;
+        navigateToPathInTree(target.path, tree.value, setCurrentTreeNode);
+        setSelectedTable(target.table);
+        setTableRequest((request) => ({
+            table: target.table,
+            seq: request.seq + 1,
+        }));
+        if (isSmallScreen) {
+            setSidebarActive(false);
+        }
+        viewerRef.current?.scrollIntoView({ block: "start" });
+        viewerRef.current?.focus({ preventScroll: true });
+    };
+
+    const showInGraph = (target: Navigation) => {
+        setGraphNav(target);
+        setGraphFocus(false);
+        setGraphVisible(true);
+        // The sticky viewer header covers the top of the page, so the graph starts below it.
+        const section = provenanceRef.current;
+        if (section) {
+            const headerHeight = viewerHeaderRef.current?.offsetHeight ?? 0;
+            window.scrollTo({
+                top: section.getBoundingClientRect().top + window.scrollY - headerHeight,
+            });
+        }
+        provenanceHeadingRef.current?.focus({ preventScroll: true });
+    };
 
     useEffect(() => {
         if (tree.value) {
@@ -729,116 +902,203 @@ export default function WebViewer({
             </div>
         </div>
     ) : (
-        <SplitPageLayout>
-            {/* <SplitPageLayout.Header >
-        </SplitPageLayout.Header> */}
-            <div className="z-2">
-                {sidebarActive && (isSmallScreen as boolean) && (
-                    <SideSheet close={() => setSidebarActive(false)}>
-                        {renderedTree}
-                    </SideSheet>
-                )}
-            </div>
-            <SplitPageLayout.Pane
-                aria-label="Sidebar"
-                resizable={true}
-                widthStorageKey={"arc-webviewer-sidebar-width"}
-                hidden={!sidebarActive || (isSmallScreen as boolean)}
-                sticky={true}
-            >
-                {renderedTree}
-            </SplitPageLayout.Pane>
-            <SplitPageLayout.Content>
-                <Stack>
-                    <div className="bgColor-default py-2 position-sticky top-0 z-1 d-flex flex-items-start">
-                        <Stack
-                            className="flex-column flex-sm-row flex-items-start flex-sm-items-center"
-                            style={{ width: "100%" }}
+        <div
+            ref={viewerRef}
+            role="region"
+            aria-label="File viewer"
+            tabIndex={-1}
+        >
+            <SplitPageLayout>
+                {/* <SplitPageLayout.Header >
+            </SplitPageLayout.Header> */}
+                <div className="z-2">
+                    {sidebarActive && (isSmallScreen as boolean) && (
+                        <SideSheet close={() => setSidebarActive(false)}>
+                            {renderedTree}
+                        </SideSheet>
+                    )}
+                </div>
+                <SplitPageLayout.Pane
+                    aria-label="Sidebar"
+                    resizable={true}
+                    widthStorageKey={"arc-webviewer-sidebar-width"}
+                    hidden={!sidebarActive || (isSmallScreen as boolean)}
+                    sticky={true}
+                >
+                    {renderedTree}
+                </SplitPageLayout.Pane>
+                <SplitPageLayout.Content>
+                    <Stack>
+                        <div
+                            ref={viewerHeaderRef}
+                            className="bgColor-default py-2 position-sticky top-0 z-1 d-flex flex-items-start"
                         >
-                            <div
-                                className="d-flex flex-row"
-                                style={{ gap: "0.5rem" }}
+                            <Stack
+                                className="flex-column flex-sm-row flex-items-start flex-sm-items-center"
+                                style={{ width: "100%" }}
                             >
-                                <IconButton
-                                    aria-label="Expand sidebar"
-                                    variant="invisible"
-                                    icon={
-                                        sidebarActive
-                                            ? Icons.SidebarCollapseIcon
-                                            : Icons.SidebarExpandIcon
-                                    }
-                                    onClick={() =>
-                                        setSidebarActive(!sidebarActive)
-                                    }
-                                />
-                                <TreeSearch navigateTo={navigateTo} />
-                            </div>
-                            {currentTreeNode &&
-                                arc.value &&
-                                arc.value.Title && (
-                                    <FileBreadcrumbs
-                                        currentTreeNode={currentTreeNode}
-                                        navigateTo={navigateTo}
-                                        title={arc.value.Title}
+                                <div
+                                    className="d-flex flex-row"
+                                    style={{ gap: "0.5rem" }}
+                                >
+                                    <IconButton
+                                        aria-label="Expand sidebar"
+                                        variant="invisible"
+                                        icon={
+                                            sidebarActive
+                                                ? Icons.SidebarCollapseIcon
+                                                : Icons.SidebarExpandIcon
+                                        }
+                                        onClick={() =>
+                                            setSidebarActive(!sidebarActive)
+                                        }
+                                    />
+                                    <TreeSearch navigateTo={navigateTo} />
+                                </div>
+                                {currentTreeNode &&
+                                    arc.value &&
+                                    arc.value.Title && (
+                                        <FileBreadcrumbs
+                                            currentTreeNode={currentTreeNode}
+                                            navigateTo={navigateTo}
+                                            title={arc.value.Title}
+                                        />
+                                    )}
+                                {graphTarget && (
+                                    <Button
+                                        size="small"
+                                        onClick={() => showInGraph(graphTarget)}
+                                    >
+                                        Show in provenance graph
+                                    </Button>
+                                )}
+                                {clearJsonCallback && (
+                                    <IconButton
+                                        style={{ marginLeft: "auto" }}
+                                        aria-label="Clear loaded JSON and upload new"
+                                        variant="danger"
+                                        icon={XCircleIcon}
+                                        onClick={() => clearJsonCallback()}
                                     />
                                 )}
-                            {clearJsonCallback && (
-                                <IconButton
-                                    style={{ marginLeft: "auto" }}
-                                    aria-label="Clear loaded JSON and upload new"
-                                    variant="danger"
-                                    icon={XCircleIcon}
-                                    onClick={() => clearJsonCallback()}
-                                />
-                            )}
-                        </Stack>
-                    </div>
-                    {currentTreeNode &&
-                    currentTreeNode.type === "file" &&
-                    arc.value ? (
-                        <RenderFileComponentByName
-                            currentTreeNode={currentTreeNode}
-                            arc={arc.value}
-                        />
-                    ) : (
-                        <FileTable
-                            loading={arc.loading}
-                            currentTreeNode={currentTreeNode}
-                            navigateTo={navigateTo}
-                        />
-                    )}
-                    {tree.value &&
-                        currentTreeNode &&
-                        currentTreeNode.name === "root" &&
-                        currentTreeNode.type === "folder" &&
-                        (readmefetch || licensefetch) && (
-                            <FileViewer
-                                nodes={[
-                                    {
-                                        node: {
-                                            id: currentTreeNode.name + "readme",
-                                            name: "README.md",
-                                            type: "file",
-                                        },
-                                        contentType: "markdown",
-                                        content: readmefetch,
-                                    },
-                                    {
-                                        node: {
-                                            id:
-                                                currentTreeNode.name +
-                                                "license",
-                                            name: "LICENSE.md",
-                                            type: "file",
-                                        },
-                                        contentType: "markdown",
-                                        content: licensefetch,
-                                    },
-                                ]}
+                            </Stack>
+                        </div>
+                        {currentTreeNode &&
+                        currentTreeNode.type === "file" &&
+                        arc.value ? (
+                            <RenderFileComponentByName
+                                key={currentTreeNode.id + "|" + tableRequest.seq}
+                                currentTreeNode={currentTreeNode}
+                                arc={arc.value}
+                                initialTable={tableRequest.table}
+                                onSelectTab={setSelectedTable}
+                            />
+                        ) : (
+                            <FileTable
+                                loading={arc.loading}
+                                currentTreeNode={currentTreeNode}
+                                navigateTo={navigateTo}
                             />
                         )}
-                </Stack>
-            </SplitPageLayout.Content>
-        </SplitPageLayout>
+                        {tree.value &&
+                            currentTreeNode &&
+                            currentTreeNode.name === "root" &&
+                            currentTreeNode.type === "folder" &&
+                            (readmefetch || licensefetch) && (
+                                <FileViewer
+                                    nodes={[
+                                        {
+                                            node: {
+                                                id: currentTreeNode.name + "readme",
+                                                name: "README.md",
+                                                type: "file",
+                                            },
+                                            contentType: "markdown",
+                                            content: readmefetch,
+                                        },
+                                        {
+                                            node: {
+                                                id:
+                                                    currentTreeNode.name +
+                                                    "license",
+                                                name: "LICENSE.md",
+                                                type: "file",
+                                            },
+                                            contentType: "markdown",
+                                            content: licensefetch,
+                                        },
+                                    ]}
+                                />
+                            )}
+                        {arc.value && (
+                            <section
+                                ref={provenanceRef}
+                                aria-labelledby="provenance-graph-heading"
+                                className="mt-4 pb-4"
+                            >
+                                <div className="d-flex flex-items-center mb-2" style={{ gap: "0.5rem" }}>
+                                    <Heading
+                                        ref={provenanceHeadingRef}
+                                        as="h2"
+                                        variant="medium"
+                                        id="provenance-graph-heading"
+                                        tabIndex={-1}
+                                    >
+                                        Provenance graph
+                                    </Heading>
+                                    <Button
+                                        size="small"
+                                        variant="invisible"
+                                        leadingVisual={graphVisible ? ChevronUpIcon : ChevronDownIcon}
+                                        aria-expanded={graphVisible}
+                                        aria-controls="provenance-graph-body"
+                                        onClick={() => setGraphVisible(!graphVisible)}
+                                    >
+                                        {graphVisible ? "Hide" : "Show"}
+                                    </Button>
+                                </div>
+                                {graphVisible && (
+                                    <div id="provenance-graph-body">
+                                        {built?.error !== undefined && (
+                                            <Banner
+                                                variant="critical"
+                                                title="The provenance graph could not be built."
+                                                description={built.error}
+                                            />
+                                        )}
+                                        {built?.index && (
+                                            <ProvenanceGraph
+                                                key={built.key}
+                                                index={built.index}
+                                                nav={graphNav}
+                                                onNavChange={(next) => {
+                                                    setGraphNav(next);
+                                                    setGraphFocus(true);
+                                                }}
+                                                focusOnNavigation={graphFocus}
+                                                actions={
+                                                    viewerTarget ? (
+                                                        <Button
+                                                            size="small"
+                                                            title={viewerTargetTitle(
+                                                                viewerTarget,
+                                                                arc.value.Title
+                                                            )}
+                                                            onClick={() => openInViewer(viewerTarget)}
+                                                        >
+                                                            Show in file viewer
+                                                        </Button>
+                                                    ) : undefined
+                                                }
+                                            />
+                                        )}
+                                    </div>
+                                )}
+                            </section>
+                        )}
+                    </Stack>
+                </SplitPageLayout.Content>
+            </SplitPageLayout>
+        </div>
     );
 }

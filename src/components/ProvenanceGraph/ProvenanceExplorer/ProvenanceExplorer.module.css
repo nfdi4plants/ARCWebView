@@ -1,0 +1,314 @@
+/*
+ * The color tokens below are custom properties on the root, so every element inside the
+ * explorer (including the graph canvas) can use them. Where Primer has a matching
+ * functional color the token points at it. The characteristic and component tokens have
+ * no Primer match, so they carry their own light and dark values.
+ */
+.root {
+  --prov-study: var(--fgColor-done, #8250df);
+  --prov-assay: var(--fgColor-success, #1a7f37);
+  --prov-run: var(--fgColor-severe, #bc4c00);
+  --prov-characteristic: #1b7c83;
+  --prov-factor: var(--fgColor-sponsors, #bf3989);
+  --prov-parameter: var(--fgColor-attention, #9a6700);
+  --prov-component: #c4432b;
+  --prov-other: var(--fgColor-muted, #59636e);
+
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--borderColor-default, #d1d9e0);
+  border-radius: 6px;
+  background: var(--bgColor-default, #fff);
+  color: var(--fgColor-default, #1f2328);
+}
+
+:global([data-color-mode='dark']) .root {
+  --prov-characteristic: #39c5cf;
+  --prov-component: #f78166;
+}
+
+.root[data-embedded='true'] {
+  border: 0;
+  border-radius: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :global([data-color-mode='auto']) .root {
+    --prov-characteristic: #39c5cf;
+    --prov-component: #f78166;
+  }
+}
+
+.header {
+  --header-padding: 14px;
+  --header-gap: 14px;
+
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: var(--header-gap);
+  padding: 10px var(--header-padding);
+  border-bottom: 1px solid var(--borderColor-default, #d1d9e0);
+  background: var(--bgColor-muted, #f6f8fa);
+}
+
+.nav {
+  min-width: 0;
+}
+
+/*
+ * The actions keep their size, and the crumbs give up room for them. A small button is taller than
+ * the crumbs, so the negative margin lets it use the header padding. The header then has the same
+ * height with and without actions.
+ */
+.actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  margin-block: -4px;
+}
+
+.navClipped {
+  overflow: hidden;
+}
+
+/*
+ * The ruler is the invisible full content of the header, measured to decide between the two
+ * layouts. The box has the width of the header content area and no height. The ruler inside it
+ * has its natural width and takes its text from data-text.
+ */
+.rulerBox {
+  position: absolute;
+  top: 0;
+  right: var(--header-padding);
+  left: var(--header-padding);
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.ruler {
+  display: flex;
+  align-items: center;
+  gap: var(--header-gap);
+  width: max-content;
+  white-space: nowrap;
+}
+
+.ruler [data-text]::before {
+  content: attr(data-text);
+}
+
+/*
+ * The header is one line in both layouts. Its height never depends on the width, so the canvas
+ * below does not change size while the explorer decides between the layouts.
+ */
+.crumbs {
+  display: flex;
+  align-items: center;
+  column-gap: 7px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-body-size-medium, 0.875rem);
+  white-space: nowrap;
+}
+
+.crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/*
+ * In the narrow header every crumb keeps a small width and shows an ellipsis when it is cut. The
+ * crumb before the current one gives way first, and the shrink factors set that order. Their sum
+ * stays at 1 or more, because a sum below 1 makes the browser take back only that part of the
+ * overflow, and the crumbs would stick out of the header.
+ */
+.crumbShrinking {
+  min-width: 2.25rem;
+  flex-shrink: 1;
+}
+
+.crumbGivingWay {
+  min-width: 3rem;
+  flex-shrink: 1000;
+}
+
+.crumbNarrow {
+  min-width: 1.75rem;
+  flex-shrink: 10;
+}
+
+.crumbShrinking .crumbCurrent,
+.crumbGivingWay .crumbButton,
+.crumbNarrow .crumbButton {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.separator {
+  flex: none;
+  color: var(--fgColor-muted, #59636e);
+}
+
+.crumbButton {
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--fgColor-accent, #0969da);
+  font: inherit;
+  cursor: pointer;
+}
+
+.crumbButton:hover {
+  text-decoration: underline;
+}
+
+.crumbButton:focus-visible {
+  border-radius: var(--borderRadius-small, 3px);
+  outline: 2px solid var(--focus-outlineColor, #0969da);
+  outline-offset: 2px;
+}
+
+.crumbMore {
+  padding: 2px 4px;
+}
+
+.crumbCurrent {
+  padding: 2px 0;
+  font-weight: 600;
+}
+
+.body {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.canvas {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.note {
+  flex: none;
+  margin: 0;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--borderColor-default, #d1d9e0);
+  color: var(--fgColor-muted, #59636e);
+  font-size: 12px;
+}
+
+/* A note below the canvas, with its rule on the side that faces the canvas. */
+.noteBelow {
+  border-top: 1px solid var(--borderColor-default, #d1d9e0);
+  border-bottom: 0;
+}
+
+.error {
+  flex: none;
+  margin: 12px;
+}
+
+.hint {
+  flex: none;
+  margin: 0;
+  padding: 6px 14px;
+  border-top: 1px solid var(--borderColor-default, #d1d9e0);
+  color: var(--fgColor-muted, #59636e);
+  font-size: 12px;
+}
+
+.empty {
+  margin: auto;
+  padding: 18px 14px;
+  color: var(--fgColor-muted, #59636e);
+  text-align: center;
+}
+
+.footer {
+  flex: none;
+  padding: 8px 14px;
+  border-top: 1px solid var(--borderColor-default, #d1d9e0);
+  background: var(--bgColor-muted, #f6f8fa);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--fgColor-muted, #59636e);
+  font-size: 12px;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--prov-other);
+}
+
+.study {
+  background: var(--prov-study);
+}
+
+.assay {
+  background: var(--prov-assay);
+}
+
+.run {
+  background: var(--prov-run);
+}
+
+.characteristic {
+  background: var(--prov-characteristic);
+}
+
+.factor {
+  background: var(--prov-factor);
+}
+
+.parameter {
+  background: var(--prov-parameter);
+}
+
+.component {
+  background: var(--prov-component);
+}
+
+.dashed {
+  width: 14px;
+  height: 10px;
+  border: 1.5px dashed var(--prov-other);
+  border-radius: 2px;
+  background: transparent;
+}

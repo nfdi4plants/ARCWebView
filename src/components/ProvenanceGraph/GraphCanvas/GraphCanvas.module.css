@@ -1,0 +1,315 @@
+/*
+ * The --prov-* color tokens come from the root of the explorer. The fallbacks keep the canvas
+ * readable when it is used outside of it.
+ */
+.root {
+  position: relative;
+  display: flex;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior: auto;
+  /* A scrollbar that appears must not narrow the box, because the width of the box shapes the layout. */
+  scrollbar-gutter: stable;
+  color: var(--fgColor-default, #1f2328);
+}
+
+/* The container takes focus after a navigation. The ring would sit on the whole view, so it stays off. */
+.root:focus {
+  outline: none;
+}
+
+.status {
+  margin: 0;
+  padding: 18px 14px;
+  color: var(--fgColor-muted, #59636e);
+}
+
+.statusReason {
+  overflow-wrap: anywhere;
+}
+
+/* margin: auto centers a small graph and lets a large one start at the top left and scroll. */
+.canvas {
+  position: relative;
+  flex: none;
+  margin: auto;
+}
+
+/* The compact layout starts at the left edge of the box, and a small graph is still centered vertically. */
+.canvasCompact {
+  margin: auto auto auto 0;
+}
+
+.svg {
+  display: block;
+  max-width: none;
+}
+
+.study {
+  --canvas-color: var(--prov-study, #8250df);
+}
+
+.assay {
+  --canvas-color: var(--prov-assay, #1a7f37);
+}
+
+.run {
+  --canvas-color: var(--prov-run, #bc4c00);
+}
+
+.nodeNeutral {
+  --canvas-color: var(--borderColor-default, #d1d9e0);
+}
+
+.edgeNeutral {
+  --canvas-color: var(--borderColor-emphasis, #818b98);
+}
+
+.accent {
+  --canvas-color: var(--borderColor-accent-emphasis, #0969da);
+}
+
+.arrowHead {
+  fill: var(--canvas-color);
+}
+
+.edge {
+  fill: none;
+  stroke: var(--canvas-color);
+  stroke-width: 1.5;
+}
+
+.highlighted {
+  stroke: var(--borderColor-accent-emphasis, #0969da);
+  stroke-width: 2.5;
+}
+
+.interactive {
+  cursor: pointer;
+}
+
+.interactive:focus-visible,
+.toggle:focus-visible {
+  outline: 3px solid var(--borderColor-accent-emphasis, #0969da);
+  outline-offset: 2px;
+}
+
+.nodeFill {
+  fill: var(--bgColor-muted, #f6f8fa);
+}
+
+.stripe {
+  fill: var(--canvas-color);
+}
+
+.nodeBorder {
+  fill: none;
+  stroke: var(--canvas-color);
+  stroke-width: 1;
+}
+
+.dashed .nodeBorder {
+  stroke-dasharray: 6 4;
+}
+
+.emphasized .nodeBorder {
+  stroke: var(--fgColor-default, #1f2328);
+  stroke-width: 2;
+}
+
+.selected .nodeBorder {
+  stroke: var(--borderColor-accent-emphasis, #0969da);
+  stroke-width: 3;
+}
+
+.title {
+  fill: var(--fgColor-default, #1f2328);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+.subtitle {
+  fill: var(--fgColor-muted, #59636e);
+  font-size: 12px;
+}
+
+.pill {
+  --pill-color: var(--borderColor-default, #d1d9e0);
+}
+
+.characteristic {
+  --pill-color: var(--prov-characteristic, #1b7c83);
+}
+
+.factor {
+  --pill-color: var(--prov-factor, #bf3989);
+}
+
+.parameter {
+  --pill-color: var(--prov-parameter, #9a6700);
+}
+
+.component {
+  --pill-color: var(--prov-component, #c4432b);
+}
+
+.other {
+  --pill-color: var(--prov-other, #59636e);
+}
+
+.process {
+  --pill-color: var(--fgColor-default, #1f2328);
+}
+
+.processHighlighted {
+  --pill-color: var(--borderColor-accent-emphasis, #0969da);
+}
+
+.pillBox {
+  fill: var(--bgColor-default, #ffffff);
+  stroke: var(--pill-color);
+  stroke-width: 1;
+}
+
+.pillDot {
+  fill: var(--pill-color);
+}
+
+.pillText {
+  font-size: 11px;
+}
+
+.pillName {
+  fill: var(--fgColor-muted, #59636e);
+}
+
+.pillValue {
+  fill: var(--fgColor-default, #1f2328);
+}
+
+.pillStrong {
+  fill: var(--fgColor-default, #1f2328);
+  font-weight: 600;
+}
+
+.pillEmpty {
+  fill: var(--fgColor-muted, #59636e);
+  font-style: italic;
+}
+
+.toggle {
+  cursor: pointer;
+}
+
+.toggle:hover .pillBox {
+  stroke: var(--fgColor-muted, #59636e);
+}
+
+.menu {
+  position: absolute;
+  z-index: 1;
+  box-sizing: border-box;
+  width: max-content;
+  overflow: auto;
+  overscroll-behavior: auto;
+  padding: 4px 0;
+  border: 1px solid var(--borderColor-default, #d1d9e0);
+  border-radius: 6px;
+  background: var(--overlay-bgColor, var(--bgColor-default, #ffffff));
+  box-shadow: var(--shadow-floating-small, 0 4px 12px rgba(31, 35, 40, 0.2));
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.menu:focus {
+  outline: none;
+}
+
+.menuList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menuList:focus-visible {
+  outline: 2px solid var(--borderColor-accent-emphasis, #0969da);
+  outline-offset: -2px;
+}
+
+.menuItem {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 10px;
+  overflow-wrap: anywhere;
+}
+
+.menuDot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pill-color, var(--borderColor-default, #d1d9e0));
+}
+
+.viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.zoomControls {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--borderColor-default, #d1d9e0);
+  border-radius: 8px;
+  background: var(--bgColor-default, #fff);
+  color: var(--fgColor-default, #1f2328);
+  box-shadow: var(--shadow-floating-small, 0 2px 8px #1f232820);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.zoomControls span {
+  min-width: 38px;
+  text-align: center;
+}
+
+.zoomControls button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.zoomControls button:hover:not(:disabled) {
+  background: var(--bgColor-muted, #f6f8fa);
+}
+
+.zoomControls button:focus-visible {
+  outline: 2px solid var(--borderColor-accent-emphasis, #0969da);
+  outline-offset: -2px;
+}
+
+.zoomControls button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
