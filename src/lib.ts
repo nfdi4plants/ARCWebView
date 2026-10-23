@@ -1,9 +1,2 @@
-declare global {
-  interface Window {
-    arcwebview: {
-      getROCJson: () => Promise<string>;
-    };
-  }
-}
-
+export type { ArcWebViewBridge, WebViewerProps } from './config';
 export {default as WebViewer} from './App';

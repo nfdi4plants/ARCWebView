@@ -42,6 +42,7 @@
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "start": "npm run dev",
+    "test": "node --test",
     "dev": "vite --config vite.config.app.ts",
     "build": "tsc -b && vite build --config vite.config.app.ts",
     "build:docker": "tsc -b && vite build --config vite.config.docker.js",
@@ -78,5 +79,8 @@
     "typescript-eslint": "^8.35.1",
     "vite": "^7.0.4",
     "vite-plugin-dts": "^4.5.4"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
   }
 }

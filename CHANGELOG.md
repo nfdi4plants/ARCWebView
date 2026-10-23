@@ -16,6 +16,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 2.0.0 - 2026-10-23
+
+### ✨ Added
+
+- Added support for graph view and sync with file tree option. (by @caroot)
+- Added argument `showUnloadButton` to show/hide the json unload button #12 (by @Freymaurer)
+
+### 🔄 Changed
+
+- Changed internal API to unify decision tree to determine: showcase (gh-pages), plugin (invenio) or component mode.
+
 ## 1.2.0 - 2026-10-07
 
 ### ✨ Added

@@ -45,6 +45,66 @@ Find more information below:
 - Components: https://primer.style/product/components/
 - Responsive: https://github.com/primer/css/blob/b5e009778ec01b6e983cba6cbf89cebfdc5a4124/docs/content/support/breakpoints.md#media-query-mixins
 
+## Entry points and configuration
+
+The application entry point is `src/main.tsx`; the npm library exports `WebViewer` through `src/lib.ts`. Both use `App`, which calls [`resolveViewerConfig` in `src/config.ts`](src/config.ts) as the single decision point for configuration:
+
+```mermaid
+flowchart TD
+    Start["resolveViewerConfig(props)"] --> Bridge{"Non-null window.arcwebview?"}
+    Bridge -- Yes --> Plugin["Plugin mode: use bridge only"]
+    Bridge -- No --> Props{"Any supported prop is not undefined?"}
+    Props -- Yes --> Component["Component mode: use props"]
+    Props -- No --> Showcase["Showcase mode: use defaults"]
+    Plugin --> Defaults["Apply defaults for omitted options"]
+    Component --> Defaults
+    Showcase --> Defaults
+    Defaults --> Loader{"Selected JSON loader?"}
+    Loader -- Yes --> Load["Load ARC; show an error on failure"]
+    Loader -- No --> Empty["Show upload and example data"]
+```
+
+| Priority | Entry point | Configuration source |
+| --- | --- | --- |
+| 1 | Embedded in an iframe by the Invenio plugin | `window.arcwebview`, including an empty `{}` |
+| 2 | Used as a component in another React application | Supported component props, when the bridge is absent |
+| 3 | GitHub Pages showcase | Defaults, when neither a bridge nor supported prop values are supplied |
+
+The bridge is an explicit convention for plugin mode. It takes precedence over **all** component props. Missing bridge fields use defaults, without falling back to props. An absent or `null` bridge allows component mode. React passes a props object even for `<WebViewer />`, so the resolver checks supported values against `undefined`; `showUnloadButton: false` selects component mode and hides the unload button. Unrelated props do not affect the decision.
+
+| Option | Bridge field | React prop | Default |
+| --- | --- | --- | --- |
+| Asynchronous ROC-JSON loader | `getROCJson` | `jsonString` | No loader |
+| Asynchronous README loader | `readmefetch` | `readmefetch` | No README |
+| Asynchronous license loader | `licensefetch` | `licensefetch` | No license |
+| Show unload button | `showUnloadButton` | `showUnloadButton` | `true` |
+
+All loaders return `Promise<string>`. The optional bridge and its settings share one TypeScript declaration in `src/config.ts`; `ArcWebViewBridge` and `WebViewerProps` are exported from the npm library. Boolean defaults use [nullish coalescing (`??`)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing), preserving explicit `false`.
+
+For example, with a `loadArcJson` callback supplied by the integration:
+
+```ts
+// Initialize inside the Invenio iframe before React mounts.
+window.arcwebview = { getROCJson: loadArcJson, showUnloadButton: false };
+```
+
+```tsx
+// In another React app, with no window.arcwebview bridge:
+<WebViewer jsonString={loadArcJson} showUnloadButton={false} />
+
+// With neither bridge nor props, use the showcase defaults:
+<WebViewer />
+```
+
+Without a selected JSON loader, all modes start with an empty view offering upload and example data. With a loader, the viewer shows a spinner until loading completes. Only the selected source's loader runs; a failure displays an error without trying another source. When the selected loader changes, previous ARC data, errors, and example mode are cleared. Results from superseded requests or unmounted viewers are ignored. [React Strict Mode](https://react.dev/reference/react/useEffect#my-effect-runs-twice-when-the-component-mounts) may invoke the selected loader again during development, so loaders should be safe to repeat.
+
+Integration considerations:
+
+- Initialize the bridge in the iframe's own window before mounting React. Setting it on the parent page does not configure the iframe; direct iframe access is subject to the [same-origin policy](https://developer.mozilla.org/en-US/docs/Web/API/HTMLIFrameElement/contentWindow). Cross-origin integrations need communication such as `postMessage`, with bridge initialization inside the iframe.
+- Bridge mutation is not reactive. For later configuration changes, use React props in component mode, or remount the plugin viewer after updating its bridge. Keep loader references stable to avoid unnecessary reloads.
+- Every viewer in the same window shares the bridge. Use props in a window without a bridge for independently configured React instances.
+- The resolver guards access to `window`, allowing configuration resolution during server rendering. Data loading starts after the component mounts in the browser.
+
 ## Requirements
 
 - installed NodeJS (v20 or higher)
@@ -53,6 +113,8 @@ Find more information below:
 
 1. Install dependencies `npm install` (once per setup)
 2. Start development server `npm start`
+
+Run the configuration regression tests with `npm test`.
 
 ## Publish components
 

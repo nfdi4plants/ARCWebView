@@ -648,7 +648,7 @@ export default function WebViewer({
     jsonString,
     readmefetch,
     licensefetch,
-    clearJsonCallback,
+    clearJsonCallback
 }: WebViewerProps) {
 
     const { setCache } = useSearchCacheContext();
