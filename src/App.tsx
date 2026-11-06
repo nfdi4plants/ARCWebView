@@ -84,7 +84,7 @@ function SkeletonTable() {
 }
 
 function App(props: WebViewerProps) {
-    const { loadJson, readmefetch, licensefetch, showUnloadButton } = resolveViewerConfig(props);
+    const { loadJson, readmefetch, licensefetch, showUnloadButton, layout } = resolveViewerConfig(props);
 
     const [jsonString, setJsonString] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(loadJson !== undefined);
@@ -145,7 +145,7 @@ function App(props: WebViewerProps) {
                         : !jsonString
                             ? <BlankSlate handleClickExampleData={handleClickExampleData} setJsonString={setJsonString} />
                             : <Suspense fallback={<SkeletonTable />}>
-                                <WebViewer jsonString={jsonString} readmefetch={exampleData ? loadExmpReadme : readmefetch} licensefetch={licensefetch} clearJsonCallback={showUnloadButton ? clear : undefined} />
+                                <WebViewer jsonString={jsonString} readmefetch={exampleData ? loadExmpReadme : readmefetch} licensefetch={licensefetch} clearJsonCallback={showUnloadButton ? clear : undefined} layout={layout} />
                             </Suspense>
                 }
             </SearchCacheProvider>

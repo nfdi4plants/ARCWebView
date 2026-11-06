@@ -20,6 +20,7 @@ test('no browser window and no supplied options selects showcase defaults', () =
         readmefetch: undefined,
         licensefetch: undefined,
         showUnloadButton: true,
+        layout: { sidebarOpen: false, provenancesOpen: true },
     });
 });
 
@@ -29,6 +30,7 @@ test('undefined supported values and unrelated props do not select component mod
         readmefetch: undefined,
         licensefetch: undefined,
         showUnloadButton: undefined,
+        layout: undefined,
         children: 'unrelated',
     }).entryPoint, 'showcase');
 });
@@ -39,6 +41,8 @@ test('each supplied supported prop selects component mode, including false', () 
         { readmefetch: async () => '# README' },
         { licensefetch: async () => 'MIT' },
         { showUnloadButton: false },
+        { layout: {} },
+        { layout: { sidebarOpen: false, provenancesOpen: false } },
     ]) {
         assert.equal(resolveViewerConfig(props).entryPoint, 'component');
     }
@@ -66,6 +70,32 @@ test('unload visibility honors the selected source for both boolean values', () 
         [{ showUnloadButton: false }, {}, true],
     ]) {
         assert.equal(resolveViewerConfig(props, bridge).showUnloadButton, expected);
+    }
+});
+
+test('layout honors both boolean values from the selected source', () => {
+    for (const sidebarOpen of [false, true]) {
+        for (const provenancesOpen of [false, true]) {
+            const layout = { sidebarOpen, provenancesOpen };
+            const opposite = { sidebarOpen: !sidebarOpen, provenancesOpen: !provenancesOpen };
+            assert.deepEqual(resolveViewerConfig({ layout }).layout, layout);
+            assert.deepEqual(resolveViewerConfig({ layout: opposite }, { layout }).layout, layout);
+        }
+    }
+});
+
+test('an omitted bridge layout uses defaults without falling back to component props', () => {
+    assert.deepEqual(resolveViewerConfig({
+        layout: { sidebarOpen: true, provenancesOpen: false },
+    }, {}).layout, { sidebarOpen: false, provenancesOpen: true });
+});
+
+test('partial and empty layouts stay with the selected source for viewer defaults', () => {
+    for (const layout of [{}, { sidebarOpen: true }, { provenancesOpen: false }]) {
+        assert.deepEqual(resolveViewerConfig({ layout }).layout, layout);
+        assert.deepEqual(resolveViewerConfig({
+            layout: { sidebarOpen: true, provenancesOpen: false },
+        }, { layout }).layout, layout);
     }
 });
 
@@ -107,6 +137,7 @@ test('an empty bridge selects plugin mode and defaults without leaking props', (
         readmefetch: undefined,
         licensefetch: undefined,
         showUnloadButton: true,
+        layout: { sidebarOpen: false, provenancesOpen: true },
     });
 });
 

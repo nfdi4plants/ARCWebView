@@ -1,9 +1,14 @@
 type TextLoader = () => Promise<string>;
+export interface LayoutOptions {
+    sidebarOpen?: boolean;
+    provenancesOpen?: boolean;
+}
 
 interface ViewerOptions {
     readmefetch?: TextLoader;
     licensefetch?: TextLoader;
     showUnloadButton?: boolean;
+    layout?: LayoutOptions;
 }
 
 export interface WebViewerProps extends ViewerOptions {
@@ -36,6 +41,7 @@ export function resolveViewerConfig(
         props.readmefetch,
         props.licensefetch,
         props.showUnloadButton,
+        props.layout
     ].some(value => value !== undefined);
 
     const entryPoint = bridge != null ? 'plugin' : hasProps ? 'component' : 'showcase';
@@ -47,5 +53,6 @@ export function resolveViewerConfig(
         readmefetch: options.readmefetch,
         licensefetch: options.licensefetch,
         showUnloadButton: options.showUnloadButton ?? true,
+        layout: options.layout ?? { sidebarOpen: false, provenancesOpen: true }
     };
 }

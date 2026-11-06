@@ -46,6 +46,7 @@ import FileTree from "../FileTree";
 import Icons from "../Icons";
 import { ChevronDownIcon, ChevronUpIcon, XCircleIcon } from "@primer/octicons-react";
 import { useMemoAsync } from "../../hooks/useMemoAsync";
+import { type LayoutOptions } from "../../config";
 
 function normalizePath(path: string): string {
     return path.replace(/\\/g, "/").replace(/^.?\/+/, "");
@@ -618,6 +619,7 @@ interface WebViewerProps {
     readmefetch?: () => Promise<string>;
     licensefetch?: () => Promise<string>;
     clearJsonCallback?: () => void;
+    layout?: LayoutOptions;
 }
 
 function formatFileSize(input: string): string {
@@ -648,12 +650,13 @@ export default function WebViewer({
     jsonString,
     readmefetch,
     licensefetch,
-    clearJsonCallback
+    clearJsonCallback,
+    layout 
 }: WebViewerProps) {
 
     const { setCache } = useSearchCacheContext();
 
-    const [sidebarActive, setSidebarActive] = useState(false);
+    const [sidebarActive, setSidebarActive] = useState(layout?.sidebarOpen ?? false);
 
     const isSmallScreen = useResponsiveValue(
         {
@@ -790,7 +793,7 @@ export default function WebViewer({
     const provenanceRef = useRef<HTMLElement>(null);
     const provenanceHeadingRef = useRef<HTMLHeadingElement>(null);
     const viewerHeaderRef = useRef<HTMLDivElement>(null);
-    const [graphVisible, setGraphVisible] = useState(true);
+    const [graphVisible, setGraphVisible] = useState(layout?.provenancesOpen ?? true);
 
     const hasPath = useMemo(() => {
         return (path: string) =>

@@ -70,7 +70,7 @@ flowchart TD
 | 2 | Used as a component in another React application | Supported component props, when the bridge is absent |
 | 3 | GitHub Pages showcase | Defaults, when neither a bridge nor supported prop values are supplied |
 
-The bridge is an explicit convention for plugin mode. It takes precedence over **all** component props. Missing bridge fields use defaults, without falling back to props. An absent or `null` bridge allows component mode. React passes a props object even for `<WebViewer />`, so the resolver checks supported values against `undefined`; `showUnloadButton: false` selects component mode and hides the unload button. Unrelated props do not affect the decision.
+The bridge is an explicit convention for plugin mode. It takes precedence over **all** component props. Missing bridge fields use defaults, without falling back to props. An absent or `null` bridge allows component mode. React passes a props object even for `<WebViewer />`, so the resolver checks supported values against `undefined`; `showUnloadButton: false` selects component mode and hides the unload button. Supplying only `layout` also selects component mode, including an empty `{}`. Unrelated props do not affect the decision.
 
 | Option | Bridge field | React prop | Default |
 | --- | --- | --- | --- |
@@ -78,23 +78,37 @@ The bridge is an explicit convention for plugin mode. It takes precedence over *
 | Asynchronous README loader | `readmefetch` | `readmefetch` | No README |
 | Asynchronous license loader | `licensefetch` | `licensefetch` | No license |
 | Show unload button | `showUnloadButton` | `showUnloadButton` | `true` |
+| Initially open file sidebar | `layout.sidebarOpen` | `layout.sidebarOpen` | `false` |
+| Initially expand provenance graph | `layout.provenancesOpen` | `layout.provenancesOpen` | `true` |
 
-All loaders return `Promise<string>`. The optional bridge and its settings share one TypeScript declaration in `src/config.ts`; `ArcWebViewBridge` and `WebViewerProps` are exported from the npm library. Boolean defaults use [nullish coalescing (`??`)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing), preserving explicit `false`.
+All loaders return `Promise<string>`. The optional bridge and its settings share one TypeScript declaration in `src/config.ts`; `ArcWebViewBridge`, `WebViewerProps`, and `LayoutOptions` are exported from the npm library. Boolean defaults use [nullish coalescing (`??`)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing), preserving explicit `false`.
 
 For example, with a `loadArcJson` callback supplied by the integration:
 
 ```ts
 // Initialize inside the Invenio iframe before React mounts.
-window.arcwebview = { getROCJson: loadArcJson, showUnloadButton: false };
+window.arcwebview = {
+  getROCJson: loadArcJson,
+  showUnloadButton: false,
+  layout: { sidebarOpen: true, provenancesOpen: false },
+};
 ```
 
 ```tsx
 // In another React app, with no window.arcwebview bridge:
-<WebViewer jsonString={loadArcJson} showUnloadButton={false} />
+<WebViewer
+  jsonString={loadArcJson}
+  showUnloadButton={false}
+  layout={{ sidebarOpen: true, provenancesOpen: false }}
+/>
 
 // With neither bridge nor props, use the showcase defaults:
 <WebViewer />
 ```
+
+`layout` sets the initial panel state when ARC content mounts. Both fields are optional and default independently, so `layout={{ provenancesOpen: false }}` starts with the sidebar closed and the graph collapsed. On small screens, an open sidebar appears as a side sheet and closes after file navigation. The sidebar toggle, graph Show/Hide button, and "Show in provenance graph" action remain available. Collapsing the graph leaves its heading and Show button visible.
+
+Users can change these states after loading. Updating `layout` props on an already mounted viewer does not reset them; remount the component (for example, with a new React `key`) to apply new initial values. Clearing and reloading ARC content also applies the initial layout again.
 
 Without a selected JSON loader, all modes start with an empty view offering upload and example data. With a loader, the viewer shows a spinner until loading completes. Only the selected source's loader runs; a failure displays an error without trying another source. When the selected loader changes, previous ARC data, errors, and example mode are cleared. Results from superseded requests or unmounted viewers are ignored. [React Strict Mode](https://react.dev/reference/react/useEffect#my-effect-runs-twice-when-the-component-mounts) may invoke the selected loader again during development, so loaders should be safe to repeat.
 
