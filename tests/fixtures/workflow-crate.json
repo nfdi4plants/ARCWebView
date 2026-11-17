@@ -1,0 +1,213 @@
+{
+  "@context": [
+    "https://w3id.org/ro/crate/1.2/context",
+    {
+      "Sample": "https://bioschemas.org/Sample",
+      "LabProtocol": "https://bioschemas.org/LabProtocol",
+      "LabProcess": "https://bioschemas.org/LabProcess",
+      "computationalTool": "https://bioschemas.org/properties/computationalTool",
+      "labEquipment": "https://bioschemas.org/properties/labEquipment",
+      "reagent": "https://bioschemas.org/properties/reagent",
+      "intendedUse": "https://bioschemas.org/properties/intendedUse",
+      "executesLabProtocol": "https://bioschemas.org/properties/executesLabProtocol",
+      "parameterValue": "https://bioschemas.org/properties/parameterValue",
+      "columnIndex": "https://w3id.org/ro/terms/arc#columnIndex"
+    }
+  ],
+  "@graph": [
+    {
+      "@id": "#Organization_Example_Institute",
+      "@type": "Organization",
+      "name": "Example Institute"
+    },
+    {
+      "@id": "#OA_researcher",
+      "@type": "DefinedTerm",
+      "name": "researcher"
+    },
+    {
+      "@id": "http://orcid.org/0000-0002-1825-0097",
+      "@type": "Person",
+      "givenName": "Alex",
+      "affiliation": {
+        "@id": "#Organization_Example_Institute"
+      },
+      "email": "alex.example@example.org",
+      "familyName": "Example",
+      "jobTitle": {
+        "@id": "#OA_researcher"
+      }
+    },
+    {
+      "@id": "#FormalParameter_W_count-reads_reads",
+      "@type": "FormalParameter",
+      "additionalType": "File[]",
+      "name": "reads",
+      "valueRequired": true
+    },
+    {
+      "@id": "#FormalParameter_W_count-reads_reference",
+      "@type": "FormalParameter",
+      "additionalType": "Directory",
+      "name": "reference",
+      "valueRequired": true
+    },
+    {
+      "@id": "#FormalParameter_W_count-reads_label",
+      "@type": "FormalParameter",
+      "additionalType": "string",
+      "name": "label",
+      "valueRequired": true
+    },
+    {
+      "@id": "#FormalParameter_W_count-reads_minQuality",
+      "@type": "FormalParameter",
+      "additionalType": "int?",
+      "name": "minQuality",
+      "valueRequired": false
+    },
+    {
+      "@id": "#FormalParameter_W_count-reads_results",
+      "@type": "FormalParameter",
+      "additionalType": "Directory",
+      "name": "results",
+      "valueRequired": true
+    },
+    {
+      "@id": "https://w3id.org/workflowhub/workflow-ro-crate#cwl",
+      "@type": "ComputerLanguage",
+      "name": "Common Workflow Language",
+      "alternateName": "CWL",
+      "identifier": {
+        "@id": "https://w3id.org/cwl/v1.2/"
+      },
+      "url": {
+        "@id": "https://www.commonwl.org/"
+      }
+    },
+    {
+      "@id": "WorkflowStep_workflows/count-reads/workflow.cwl_trim",
+      "@type": "ComputationalWorkflow",
+      "name": "trim",
+      "identifier": "./workflows/count-reads/trim.cwl"
+    },
+    {
+      "@id": "WorkflowStep_workflows/count-reads/workflow.cwl_count",
+      "@type": "ComputationalWorkflow",
+      "name": "count",
+      "identifier": "./workflows/count-reads/count.cwl"
+    },
+    {
+      "@id": "#Organization_DataPLANT",
+      "@type": "Organization",
+      "name": "DataPLANT"
+    },
+    {
+      "@id": "./workflows/count-reads/workflow.cwl",
+      "@type": [
+        "File",
+        "ComputationalWorkflow",
+        "SoftwareSourceCode",
+        "LabProtocol"
+      ],
+      "additionalType": "WorkflowProtocol",
+      "input": [
+        {
+          "@id": "#FormalParameter_W_count-reads_reads"
+        },
+        {
+          "@id": "#FormalParameter_W_count-reads_reference"
+        },
+        {
+          "@id": "#FormalParameter_W_count-reads_label"
+        },
+        {
+          "@id": "#FormalParameter_W_count-reads_minQuality"
+        }
+      ],
+      "output": {
+        "@id": "#FormalParameter_W_count-reads_results"
+      },
+      "name": "./workflows/count-reads/workflow.cwl",
+      "programmingLanguage": {
+        "@id": "https://w3id.org/workflowhub/workflow-ro-crate#cwl"
+      },
+      "hasPart": [
+        {
+          "@id": "WorkflowStep_workflows/count-reads/workflow.cwl_trim"
+        },
+        {
+          "@id": "WorkflowStep_workflows/count-reads/workflow.cwl_count"
+        }
+      ],
+      "creator": {
+        "@id": "http://orcid.org/0000-0002-1825-0097"
+      },
+      "sdPublisher": {
+        "@id": "#Organization_DataPLANT"
+      },
+      "dateCreated": "2025-01-01T00:00:00.000Z",
+      "version": "1.0.0",
+      "url": "https://example.org/workflows/count-reads"
+    },
+    {
+      "@id": "./workflows/count-reads/trim.cwl",
+      "@type": "File",
+      "name": "./workflows/count-reads/trim.cwl"
+    },
+    {
+      "@id": "./workflows/count-reads/count.cwl",
+      "@type": "File",
+      "name": "./workflows/count-reads/count.cwl"
+    },
+    {
+      "@id": "https://spdx.org/licenses/CC-BY-4.0",
+      "@type": "CreativeWork",
+      "text": "This invented paragraph is a placeholder for the Creative Commons Attribution 4.0 International license (CC BY 4.0). It belongs to a synthetic test fixture and grants no rights."
+    },
+    {
+      "@id": "./",
+      "@type": "Dataset",
+      "description": "Trims reads and counts them per sample.",
+      "name": "Count reads",
+      "identifier": "count-reads",
+      "creator": {
+        "@id": "http://orcid.org/0000-0002-1825-0097"
+      },
+      "hasPart": [
+        {
+          "@id": "./workflows/count-reads/workflow.cwl"
+        },
+        {
+          "@id": "./workflows/count-reads/trim.cwl"
+        },
+        {
+          "@id": "./workflows/count-reads/count.cwl"
+        }
+      ],
+      "mainEntity": {
+        "@id": "./workflows/count-reads/workflow.cwl"
+      },
+      "dateCreated": "2025-01-01T00:00:00.000Z",
+      "datePublished": "2025-01-01T00:00:00.000Z",
+      "license": {
+        "@id": "https://spdx.org/licenses/CC-BY-4.0"
+      }
+    },
+    {
+      "@id": "ro-crate-metadata.json",
+      "@type": "CreativeWork",
+      "conformsTo": [
+        {
+          "@id": "https://w3id.org/ro/crate/1.1"
+        },
+        {
+          "@id": "https://w3id.org/workflowhub/workflow-ro-crate/1.0"
+        }
+      ],
+      "about": {
+        "@id": "./"
+      }
+    }
+  ]
+}
