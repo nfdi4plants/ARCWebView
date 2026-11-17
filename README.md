@@ -36,6 +36,23 @@ createRoot(document.getElementById('root')!).render(
 
 ```
 
+# Supported input
+
+The viewer reads the `ro-crate-metadata.json` of a full ARC. It also reads the file of a Workflow RO-Crate (one ARC workflow) and of a Workflow Run Crate (one ARC run), as ARCtrl writes them with `writeWorkflowAsCrate` and `writeRunAsCrate`. The DataPLANT endpoint-submission service uploads this format to WorkflowHub. Pass the file through the ROC-JSON loader (see [Entry points and configuration](#entry-points-and-configuration)) or use "Upload ROC-JSON" in the demo.
+
+No prop or option selects the kind. The viewer detects it from the crate. The Workflow Run Crate profile on the root dataset marks a run crate, and the Workflow RO-Crate profile on the metadata descriptor or the root dataset marks a workflow crate. The viewer reads every other file as a full ARC, as before.
+
+The viewer reads JSON only. Crates downloaded from WorkflowHub are zip files, so extract `ro-crate-metadata.json` from the zip and pass or upload that file.
+
+A crate opens directly on its run or workflow metadata page. A run crate also shows its process tables and the provenance graph. A workflow crate has no provenance graph.
+
+If a file declares one of these profiles but cannot be read as an ARC run or workflow (for example a crate from another tool without a root `identifier`), the viewer shows an error with the reason.
+
+Limits:
+
+- The crate JSON-LD does not carry the full CWL, so step wiring and requirements are missing. The viewer does not display CWL.
+- Packed crates carry no `sha256` or `contentSize`, so their files get no download links.
+
 # Development
 
 This component uses GitHubs Primer ProductUI.
@@ -128,7 +145,7 @@ Integration considerations:
 1. Install dependencies `npm install` (once per setup)
 2. Start development server `npm start`
 
-Run the configuration regression tests with `npm test`.
+Run the configuration regression tests with `npm test`. The same command runs `tests/crateLoader.test.mjs` against the fixtures in `tests/fixtures/`. They hold an invented run and workflow, written as crates with ARCtrl 3.3.1 `writeRunAsCrate` and `writeWorkflowAsCrate`, the same writers the endpoint-submission packer uses.
 
 ## Publish components
 
