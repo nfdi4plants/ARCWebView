@@ -21,6 +21,7 @@ import { createRoot } from 'react-dom/client'
 import { BaseStyles, ThemeProvider } from '@primer/react'
 import '@primer/primitives/dist/css/functional/themes/light.css'
 import "@primer/css/dist/primer.css";
+import '@nfdi4plants/arc-web-view/style.css'
 import { WebViewer } from '@nfdi4plants/arc-web-view'
 
 
@@ -36,6 +37,74 @@ createRoot(document.getElementById('root')!).render(
 
 ```
 
+`@nfdi4plants/arc-web-view/style.css` holds the styles of the provenance graph. The JavaScript does not load it, so import it once in your application. Without it the graph has no layout and no colors.
+
+# Using the parts separately
+
+`WebViewer` is the whole viewer: a file tree in the sidebar, and the file browser and the provenance graph as two tabs. The three parts are also exported on their own, for a page that arranges them itself.
+
+```tsx
+import { useMemo } from 'react'
+import { FileBrowser, FileTree, ProvenanceGraph, loadCrate } from '@nfdi4plants/arc-web-view'
+
+function Arc({ json }: { json: string }) {
+  // Parse once per document and keep the result.
+  const crate = useMemo(() => loadCrate(json), [json])
+  return (
+    <>
+      <ProvenanceGraph crate={crate} height={500} />
+      <FileBrowser crate={crate} />
+    </>
+  )
+}
+```
+
+`loadCrate(json)` parses the text of a `ro-crate-metadata.json` and returns a crate. It runs synchronously and throws when the text is not a crate the viewer can read. Every part takes the crate as a prop. Parsing is the expensive step and the parts start over for a new crate, so keep the crate in a memo or in state. Parts that get the same crate share its file tree and provenance index. A crate has two readable fields, `kind` (`'arc'`, `'run'` or `'workflow'`) and `landingPath`.
+
+| Part | What it shows | Props |
+| --- | --- | --- |
+| `FileBrowser` | Search, breadcrumbs, the listing of a folder and the content of a file. It has no file tree and no page layout. | `crate`, `location`, `defaultLocation`, `onLocationChange`, `headerStart`, `headerActions` |
+| `ProvenanceGraph` | The provenance graph. A workflow crate has none and shows a short note instead. | `crate`, `nav`, `defaultNav`, `onNavChange`, `actions`, `height` |
+| `FileTree` | The folders and files as a tree. You pass the current path and handle each selection. | `crate`, `currentPath`, `onSelect`, `isSelectable` |
+
+`FileBrowser` and `ProvenanceGraph` each keep their own place when you pass only the crate. To hold the place yourself, pass `location` with `onLocationChange` to the file browser, or `nav` with `onNavChange` to the graph. The part then shows what it is given and reports each navigation through the callback. A `location` is `{ path, table? }`. `path` is a file or folder of the crate and `''` is the root. `table` names an annotation table of the isa file at `path`, and without it the first tab of the file is open. A `nav` is a `Navigation` object from `onNavChange` or `locationToNavigation`.
+
+Three functions connect the parts:
+
+- `landingLocation(crate)` is where the file browser starts: the run or workflow folder of such a crate, and the root of a full ARC.
+- `locationToNavigation(crate, location)` gives the place in the graph that belongs to a file or folder. It returns `undefined` when the graph has no such place.
+- `navigationToLocation(crate, nav)` gives the file or folder that belongs to a place in the graph, or `undefined` when there is none.
+
+The two mappings do not round-trip. Most files of an assay lead to its process view, and that view leads back to the assay folder.
+
+This example lets the tree drive both other parts:
+
+```tsx
+function Wired({ crate }: { crate: Crate }) {
+  const [location, setLocation] = useState(() => landingLocation(crate))
+  const [nav, setNav] = useState<Navigation>({ view: 'datasets' })
+  return (
+    <>
+      <FileTree
+        crate={crate}
+        currentPath={location.path}
+        onSelect={(path) => {
+          setLocation({ path })
+          const target = locationToNavigation(crate, { path })
+          if (target) setNav(target)
+        }}
+      />
+      <ProvenanceGraph crate={crate} nav={nav} onNavChange={setNav} />
+      <FileBrowser crate={crate} location={location} onLocationChange={setLocation} />
+    </>
+  )
+}
+```
+
+`FileTree` opens the folders above `currentPath` and marks that item. An item for which `isSelectable` returns `false` cannot be selected. Such a folder opens and closes on a click, and such a file is shown muted.
+
+The graph takes its height from `height`. Without it the graph is `70vh` high and at least `420px`. The `t` key focuses the search box of the file browser, except while the user types in another field or the browser is hidden.
+
 # Supported input
 
 The viewer reads the `ro-crate-metadata.json` of a full ARC. It also reads the file of a Workflow RO-Crate (one ARC workflow) and of a Workflow Run Crate (one ARC run), as ARCtrl writes them with `writeWorkflowAsCrate` and `writeRunAsCrate`. The DataPLANT endpoint-submission service uploads this format to WorkflowHub. Pass the file through the ROC-JSON loader (see [Entry points and configuration](#entry-points-and-configuration)), use "Upload ROC-JSON" in the demo, or open the demo with the crate named in its address (see [Showcase URL parameters](#showcase-url-parameters)).
@@ -44,7 +113,7 @@ No prop or option selects the kind. The viewer detects it from the crate. The Wo
 
 The viewer reads JSON only. Crates downloaded from WorkflowHub are zip files, so extract `ro-crate-metadata.json` from the zip and pass or upload that file. A public WorkflowHub entry can also be opened with the `workflowhub` URL parameter, which loads the JSON without the zip.
 
-A crate opens on its run or workflow folder (`runs/<id>` or `workflows/<id>`). A run crate also shows its process tables and the provenance graph. A workflow crate has no provenance graph.
+A crate opens on its run or workflow folder (`runs/<id>` or `workflows/<id>`). A run crate also shows its process tables and the provenance graph. A workflow crate has no provenance graph, so the viewer shows its files without the tabs.
 
 If a file declares one of these profiles but cannot be read as an ARC run or workflow (for example a crate from another tool without a root `identifier`), the viewer shows an error with the reason.
 
@@ -92,13 +161,11 @@ The bridge is an explicit convention for plugin mode. It takes precedence over *
 | Option | Bridge field | React prop | Default |
 | --- | --- | --- | --- |
 | Asynchronous ROC-JSON loader | `getROCJson` | `jsonString` | No loader; in showcase mode, one from the [URL parameters](#showcase-url-parameters) |
-| Asynchronous README loader | `readmefetch` | `readmefetch` | No README |
-| Asynchronous license loader | `licensefetch` | `licensefetch` | No license |
 | Show unload button | `showUnloadButton` | `showUnloadButton` | `true` |
 | Initially open file sidebar | `layout.sidebarOpen` | `layout.sidebarOpen` | `false` |
-| Initially expand provenance graph | `layout.provenancesOpen` | `layout.provenancesOpen` | `true` |
+| Tab that is open first | `layout.initialTab` | `layout.initialTab` | `'files'` |
 
-All loaders return `Promise<string>`. The optional bridge and its settings share one TypeScript declaration in `src/config.ts`; `ArcWebViewBridge`, `WebViewerProps`, and `LayoutOptions` are exported from the npm library. Boolean defaults use [nullish coalescing (`??`)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing), preserving explicit `false`.
+The loader returns `Promise<string>`. The optional bridge and its settings share one TypeScript declaration in `src/config.ts`. `ArcWebViewBridge`, `WebViewerProps`, `LayoutOptions`, and `ViewerTab` are exported from the npm library. Boolean defaults use [nullish coalescing (`??`)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing), preserving explicit `false`.
 
 For example, with a `loadArcJson` callback supplied by the integration:
 
@@ -107,7 +174,7 @@ For example, with a `loadArcJson` callback supplied by the integration:
 window.arcwebview = {
   getROCJson: loadArcJson,
   showUnloadButton: false,
-  layout: { sidebarOpen: true, provenancesOpen: false },
+  layout: { sidebarOpen: true, initialTab: 'provenance' },
 };
 ```
 
@@ -116,14 +183,16 @@ window.arcwebview = {
 <WebViewer
   jsonString={loadArcJson}
   showUnloadButton={false}
-  layout={{ sidebarOpen: true, provenancesOpen: false }}
+  layout={{ sidebarOpen: true, initialTab: 'provenance' }}
 />
 
 // With neither bridge nor props, use the showcase defaults:
 <WebViewer />
 ```
 
-`layout` sets the initial panel state when ARC content mounts. Both fields are optional and default independently, so `layout={{ provenancesOpen: false }}` starts with the sidebar closed and the graph collapsed. On small screens, an open sidebar appears as a side sheet and closes after file navigation. The sidebar toggle, graph Show/Hide button, and "Show in provenance graph" action remain available. Collapsing the graph leaves its heading and Show button visible.
+`layout` sets the initial state when ARC content mounts. Both fields are optional and default independently, so `layout={{ initialTab: 'provenance' }}` starts with the sidebar closed and the graph tab open. `initialTab` is `'files'` or `'provenance'`, and a workflow crate always opens on its files. On small screens, an open sidebar appears as a side sheet and closes after a selection in the tree.
+
+The file browser and the provenance graph are two tabs, and each keeps its own place when you switch. The "Show in provenance graph" and "Show in file viewer" buttons open the other tab on the matching place, and each is shown only when there is one. The file tree in the sidebar navigates the open tab. On the graph tab a file or folder leads to its place in the graph, the isa file of a dataset to its processes, and a file the graph has no place for is shown muted. A folder without a place, such as `assays`, opens and closes on a click.
 
 Users can change these states after loading. Updating `layout` props on an already mounted viewer does not reset them; remount the component (for example, with a new React `key`) to apply new initial values. Clearing and reloading ARC content also applies the initial layout again.
 
@@ -169,7 +238,7 @@ Use one of the two parameters; both together is an error. The resolver reads the
 1. Install dependencies `npm install` (once per setup)
 2. Start development server `npm start`
 
-Run the configuration regression tests with `npm test`. The same command runs `tests/crateLoader.test.mjs` against the fixtures in `tests/fixtures/`. They hold an invented run and workflow, written as crates with ARCtrl 3.3.1 `writeRunAsCrate` and `writeWorkflowAsCrate`, the same writers the endpoint-submission packer uses.
+Run the configuration regression tests with `npm test`. The same command runs `tests/crateLoader.test.mjs` against the fixtures in `tests/fixtures/`. They hold an invented run and workflow, written as crates with ARCtrl 3.3.1 `writeRunAsCrate` and `writeWorkflowAsCrate`, the same writers the endpoint-submission packer uses. `tests/linking.test.mjs` and `tests/crate.test.mjs` cover the mapping between file paths and places in the provenance graph.
 
 ## Publish components
 

@@ -1,4 +1,5 @@
 import { ARC, JsonController, ROCrate } from '@nfdi4plants/arctrl';
+import type { CrateKind } from '../crate';
 
 export type LDGraph = ReturnType<typeof JsonController.LDGraph.fromROCrateJsonString>;
 type LDNode = InstanceType<typeof ROCrate.LDNode>;
@@ -10,7 +11,7 @@ function plain<T>(option: unknown): T | undefined {
     return option as T | undefined;
 }
 
-export type CrateKind = 'arc' | 'run' | 'workflow';
+export type { CrateKind };
 
 export interface LoadedCrate {
     arc: ARC;

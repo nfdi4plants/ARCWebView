@@ -24,11 +24,10 @@ export default defineConfig({
         '@nfdi4plants/arctrl',
         "@primer/css",
         "@primer/primitives",
-        "@primer/react",
+        // Also the entry points below it, such as @primer/react/experimental.
+        /^@primer\/react($|\/)/,
         "elkjs",
         /^elkjs\//,
-        "marked",
-        "mermaid",
         /^react($|\/)/,
         /^react-dom($|\/)/,
         "styled-components"

@@ -10,11 +10,13 @@ export type TreeNode = {
 
 export type FileTypes = File | Blob | string;
 
-export type ContentType = "text" | "markdown" | "binary" | "jsx";
+export type ContentType = "text" | "binary" | "jsx";
 
 export type FileViewerContent = {
   node: TreeNode;
   name?: string;
+  // The name of the annotation table that the tab shows. A tab that shows no table (metadata) leaves it out.
+  table?: string;
   content?: () => Promise<FileTypes>;
   component?: React.JSX.Element;
   contentType?: ContentType; // Default content type if not specified
@@ -31,9 +33,4 @@ export interface SearchCache {
   name: string
   path: string
   type: "file" | "header" | "isa-title" | "isa-table" | "person"
-}; // adjust based on your file types
-
-export type SearchCacheContextType = {
-    cache: SearchCache[];
-    setCache: React.Dispatch<React.SetStateAction<SearchCache[]>>;
 };

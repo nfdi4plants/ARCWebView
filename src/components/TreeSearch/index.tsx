@@ -1,12 +1,12 @@
 import { Autocomplete, FormControl, ActionList, useFocusZone } from '@primer/react'
 import { Dialog } from '@primer/react/experimental'
-import { useSearchCacheContext } from '../../contexts'
 import type { SearchCache } from '../../util/types'
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Icons from '../Icons';
 
 interface TreeSearchProps {
+    cache: SearchCache[];
     navigateTo: (path: string) => void;
 }
 interface MyMenuItem {
@@ -65,6 +65,7 @@ function SearchResultsDialog({ searchResults, onDialogClose, returnFocus, onSele
     const index0SearchResult = useRef<any>(null)
 
     const { containerRef } = useFocusZone();
+    const listId = useId();
 
     return (
       <Dialog
@@ -73,7 +74,7 @@ function SearchResultsDialog({ searchResults, onDialogClose, returnFocus, onSele
           returnFocusRef={returnFocus}
           initialFocusRef={index0SearchResult}>
             <div ref={containerRef as any}>
-              <ActionList aria-label="Search Results" id="search-results-list" >
+              <ActionList aria-label="Search Results" id={listId} >
                   {searchResults.map((item, index) => (
                       <ActionList.Item
                           key={index}
@@ -108,9 +109,7 @@ function findItemsFromCache(cache: SearchCache[], text: string): MyMenuItem[] {
     }
 }
 
-export default function TreeSearch({ navigateTo }: TreeSearchProps) {
-    const { cache } = useSearchCacheContext()
-    
+export default function TreeSearch({ cache, navigateTo }: TreeSearchProps) {
     const [loading, setLoading] = useState(false);
     const fileItems = cacheArrayToDistinctMenuItems(cache.filter(item => item.type === "file").slice(0, 10));
     const [items, setItems] = useState<MyMenuItem[]>(fileItems);
@@ -118,6 +117,7 @@ export default function TreeSearch({ navigateTo }: TreeSearchProps) {
     const inputRef = useRef<any>(null);
     const onDialogClose = useCallback(() => setMultiSelectOptions([]), [])
     const wasClosed = useRef(false);
+    const labelId = useId();
 
     const onOpenChange = (open: boolean) => {
 
@@ -164,10 +164,18 @@ export default function TreeSearch({ navigateTo }: TreeSearchProps) {
 
     useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 't' && document.activeElement !== inputRef.current) {
-          e.preventDefault(); // optional
-          inputRef.current?.focus();
-        }
+        if (e.key !== 't') return;
+        if (e.defaultPrevented || e.isComposing) return;
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        const target = e.target as HTMLElement | null;
+        if (target && (
+          target.isContentEditable ||
+          ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+        )) return;
+        if (!inputRef.current || inputRef.current.offsetParent === null) return;
+        if (document.activeElement === inputRef.current) return;
+        e.preventDefault();
+        inputRef.current.focus();
       };
 
       window.addEventListener('keydown', handleKeyDown);
@@ -193,7 +201,7 @@ export default function TreeSearch({ navigateTo }: TreeSearchProps) {
               document.body
             )}
             <FormControl>
-                <FormControl.Label visuallyHidden id="autocompleteLabel-arc-search">Autocomplete search for ARC</FormControl.Label>
+                <FormControl.Label visuallyHidden id={labelId}>Autocomplete search for ARC</FormControl.Label>
                 <Autocomplete>
                     <Autocomplete.Input ref={inputRef} onChange={onChange} leadingVisual={<Icons.SearchIcon />} trailingVisual={() => <kbd>t</kbd>} />
                     <Autocomplete.Overlay style={{width: "max-content"}}>
@@ -202,7 +210,7 @@ export default function TreeSearch({ navigateTo }: TreeSearchProps) {
                             loading={loading}
                             onSelectedChange={onSelect}
                             selectedItemIds={[]}
-                            aria-labelledby="autocomplete-arc-search"
+                            aria-labelledby={labelId}
                             items={items}
                         />
                     </Autocomplete.Overlay>

@@ -1,8 +1,6 @@
 import { useEffect, useState, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 const WebViewer = lazy(() => import('./components/WebViewer'));
 import { Blankslate } from '@primer/react/experimental'
-import { FileCacheProvider, SearchCacheProvider } from './ContextProvider';
-import { marked } from 'marked';
 import { Button, Spinner, Stack, Banner } from '@primer/react'
 import { UploadIcon, SearchIcon } from '@primer/octicons-react'
 import { resolveViewerConfig } from './config';
@@ -62,20 +60,6 @@ function BlankSlate({ handleClickExampleData, setJsonString }: { handleClickExam
     )
 }
 
-marked.use({
-    renderer: {
-        code: function (code) {
-            if (code.lang == 'mermaid') return `<pre class="mermaid">${code.text}</pre>`;
-            return `<pre>${code.text}</pre>`;
-        }
-    }
-})
-
-const loadExmpReadme = async () => {
-    const readme = await import('./assets/README.md?raw');
-    return readme.default;
-}
-
 function SkeletonTable() {
     return (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -87,23 +71,21 @@ function SkeletonTable() {
 function App(props: WebViewerProps) {
     // The configuration is resolved again only when a supported prop changes. A showcase loader built
     // from the query string therefore keeps its identity across renders, and the effect below runs once.
-    const { jsonString: jsonProp, readmefetch: readmeProp, licensefetch: licenseProp, showUnloadButton: unloadProp, layout: layoutProp } = props;
-    const { loadJson, readmefetch, licensefetch, showUnloadButton, layout } = useMemo(
+    const { jsonString: jsonProp, showUnloadButton: unloadProp, layout: layoutProp } = props;
+    const { loadJson, showUnloadButton, layout } = useMemo(
         () => resolveViewerConfig({
-            jsonString: jsonProp, readmefetch: readmeProp, licensefetch: licenseProp, showUnloadButton: unloadProp, layout: layoutProp,
+            jsonString: jsonProp, showUnloadButton: unloadProp, layout: layoutProp,
         }),
-        [jsonProp, readmeProp, licenseProp, unloadProp, layoutProp],
+        [jsonProp, unloadProp, layoutProp],
     );
 
     const [jsonString, setJsonString] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(loadJson !== undefined);
     const [error, setError] = useState<string | null>(null);
-    const [exampleData, setExampleData] = useState<boolean>(false);
 
     useEffect(() => {
         let active = true;
         setJsonString(null);
-        setExampleData(false);
         setError(null);
         setLoading(loadJson !== undefined);
 
@@ -132,34 +114,29 @@ function App(props: WebViewerProps) {
     const clear = useCallback(() => {
         setJsonString(null);
         setError(null);
-        setExampleData(false);
         setLoading(false);
     }, []);
 
     const handleClickExampleData = async () => {
         const json = await loadExmpJson();
         setJsonString(json);
-        setExampleData(true);
     }
 
     return (
-        <FileCacheProvider>
-            <SearchCacheProvider>
-                {
-                    error && <ErrorBanner error={error} clearError={() => setError(null)} />
-                }
-                {
-                    loading
-                        ? <SkeletonTable />
-                        : !jsonString
-                            ? <BlankSlate handleClickExampleData={handleClickExampleData} setJsonString={setJsonString} />
-                            : <Suspense fallback={<SkeletonTable />}>
-                                <WebViewer jsonString={jsonString} readmefetch={exampleData ? loadExmpReadme : readmefetch} licensefetch={licensefetch} clearJsonCallback={showUnloadButton ? clear : undefined} layout={layout} />
-                            </Suspense>
-                }
-            </SearchCacheProvider>
-        </FileCacheProvider>
-
+        <>
+            {
+                error && <ErrorBanner error={error} clearError={() => setError(null)} />
+            }
+            {
+                loading
+                    ? <SkeletonTable />
+                    : !jsonString
+                        ? <BlankSlate handleClickExampleData={handleClickExampleData} setJsonString={setJsonString} />
+                        : <Suspense fallback={<SkeletonTable />}>
+                            <WebViewer jsonString={jsonString} clearJsonCallback={showUnloadButton ? clear : undefined} layout={layout} />
+                        </Suspense>
+            }
+        </>
     )
 }
 
