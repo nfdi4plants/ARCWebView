@@ -1,3 +1,6 @@
+import { LoadError, loadCrateFromUrl, parseCrateUrl } from './util/urlLoader';
+import { loadWorkflowHubCrate, parseWorkflowHubParams } from './util/workflowHubLoader';
+
 type TextLoader = () => Promise<string>;
 export interface LayoutOptions {
     sidebarOpen?: boolean;
@@ -31,10 +34,36 @@ interface ViewerConfig extends ViewerOptions {
     showUnloadButton: boolean;
 }
 
+const rejectWith = (message: string): TextLoader => () => Promise.reject(new LoadError(message));
+
+/**
+ * Loader for the showcase query string, or undefined when it names no crate. `url` takes any crate
+ * URL that allows cross-origin reads. `workflowhub` names a WorkflowHub entry and loads its latest
+ * version through the same URL loader.
+ */
+function queryLoader(search: string): TextLoader | undefined {
+    const query = new URLSearchParams(search);
+    const url = query.get('url');
+    const workflowHub = parseWorkflowHubParams(search);
+
+    if (url !== null && workflowHub !== undefined) {
+        return rejectWith('Use either the "url" or the "workflowhub" URL parameter, not both.');
+    }
+    if (url !== null) {
+        const parsed = parseCrateUrl(url);
+        return 'error' in parsed ? rejectWith(parsed.error) : () => loadCrateFromUrl(parsed.url);
+    }
+    if (workflowHub !== undefined) {
+        return 'error' in workflowHub ? rejectWith(workflowHub.error) : () => loadWorkflowHubCrate(workflowHub);
+    }
+    return undefined;
+}
+
 /** Select one entry point before applying defaults or calling any loaders. */
 export function resolveViewerConfig(
     props: WebViewerProps,
     bridge = typeof window === 'undefined' ? undefined : window.arcwebview,
+    search = typeof window === 'undefined' ? '' : window.location?.search ?? '',
 ): ViewerConfig {
     const hasProps = [
         props.jsonString,
@@ -49,7 +78,9 @@ export function resolveViewerConfig(
 
     return {
         entryPoint,
-        loadJson: bridge != null ? bridge.getROCJson : props.jsonString,
+        loadJson: bridge != null
+            ? bridge.getROCJson
+            : entryPoint === 'showcase' ? queryLoader(search) : props.jsonString,
         readmefetch: options.readmefetch,
         licensefetch: options.licensefetch,
         showUnloadButton: options.showUnloadButton ?? true,

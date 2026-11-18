@@ -2,23 +2,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { JsonController } from '@nfdi4plants/arctrl';
-import ts from 'typescript';
+import { importTs } from './importTs.mjs';
 
-// A data: module cannot resolve bare package names, so the arctrl specifier becomes a file: URL.
-async function importTs(relativePath, { resolveArctrl = false } = {}) {
-    const source = readFileSync(new URL(relativePath, import.meta.url), 'utf8');
-    let { outputText } = ts.transpileModule(source, {
-        compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-    });
-    if (resolveArctrl) {
-        outputText = outputText.replace("'@nfdi4plants/arctrl'", () =>
-            JSON.stringify(import.meta.resolve('@nfdi4plants/arctrl'))
-        );
-    }
-    return import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
-}
-
-const { loadCrate } = await importTs('../src/util/crateLoader.ts', { resolveArctrl: true });
+const { loadCrate } = await importTs('../src/util/crateLoader.ts');
 const { buildProvenanceIndex } = await importTs('../src/provenance/buildIndex.ts');
 const { processGraph } = await importTs('../src/provenance/queries.ts');
 
