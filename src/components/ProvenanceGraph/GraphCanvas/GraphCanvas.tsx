@@ -335,7 +335,11 @@ export function GraphCanvas({
   useLayoutEffect(() => {
     const root = rootRef.current
     if (!root) return
-    const measureBox = () =>
+    const measureBox = () => {
+      // An owner can hide the canvas (a closed tab panel has display: none), and it then measures 0 x 0.
+      // The canvas keeps the last size it had on screen, so hiding it starts no layout and the same
+      // drawing is there when it comes back.
+      if (root.offsetWidth === 0 && root.offsetHeight === 0) return
       setBox((current) => {
         const next = { width: root.clientWidth, height: root.clientHeight, portrait: root.offsetHeight > root.offsetWidth }
         const same =
@@ -345,6 +349,7 @@ export function GraphCanvas({
           Math.abs(next.height - current.height) < RESIZE_NOISE
         return same ? current : next
       })
+    }
     measureBox()
     if (typeof ResizeObserver === 'undefined') return
     const observer = new ResizeObserver(measureBox)
