@@ -3,17 +3,8 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { importTs } from './importTs.mjs';
 
-const {
-    loadCrate,
-    crateId,
-    crateArc,
-    crateTree,
-    crateHasPath,
-    crateProvenance,
-    landingLocation,
-    locationToNavigation,
-    navigationToLocation,
-} = await importTs('../src/crate.ts');
+const { loadCrate, landingLocation, locationToNavigation, navigationToLocation } = await importTs('../src/crate.ts');
+const { crateId, crateArc, crateTree, crateHasPath, crateProvenance } = await importTs('../src/crateData.ts');
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const arcJson = read('../src/assets/arc-ro-crate-metadata.json');

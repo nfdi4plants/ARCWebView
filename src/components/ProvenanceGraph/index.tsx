@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Banner } from "@primer/react";
-import { crateId, crateProvenance, type Crate } from "../../crate";
+import { type Crate } from "../../crate";
+import { crateId, crateProvenance } from "../../crateData";
 import { START_NAVIGATION, type Navigation } from "../../provenance/navigation";
 import { ProvenanceExplorer } from "./ProvenanceExplorer";
 

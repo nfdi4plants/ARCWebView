@@ -2,7 +2,8 @@ import { TreeView } from "@primer/react";
 import { type TreeNode } from "../../util/types";
 import Icons from "../Icons";
 import { memo, useCallback, useMemo, useState } from "react";
-import { crateTree, type Crate } from "../../crate";
+import { type Crate } from "../../crate";
+import { crateTree } from "../../crateData";
 import { findPathToNode } from "../../util/fileTree";
 
 export interface FileTreeProps {

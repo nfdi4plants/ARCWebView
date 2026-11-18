@@ -3,8 +3,7 @@ export { default as WebViewer } from './App';
 
 // The parts of the viewer, for a page that arranges them itself. Each one takes a crate from loadCrate.
 export { loadCrate, landingLocation, locationToNavigation, navigationToLocation } from './crate';
-export type { Crate, FileLocation } from './crate';
-export type { CrateKind } from './util/crateLoader';
+export type { Crate, CrateKind, FileLocation } from './crate';
 export type { Navigation, ProvenanceView } from './provenance/navigation';
 export { default as FileTree } from './components/FileTree';
 export type { FileTreeProps } from './components/FileTree';

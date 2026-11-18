@@ -4,8 +4,6 @@ import FileTree from "../FileTree";
 import ProvenanceGraph from "../ProvenanceGraph";
 import { errorMessage } from "../ProvenanceGraph/errorMessage";
 import {
-    crateArc,
-    crateId,
     landingLocation,
     loadCrate,
     locationToNavigation,
@@ -13,6 +11,7 @@ import {
     type Crate,
     type FileLocation,
 } from "../../crate";
+import { crateArc, crateId } from "../../crateData";
 import { START_NAVIGATION, type Navigation } from "../../provenance/navigation";
 import {
     SplitPageLayout,

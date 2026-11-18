@@ -12,14 +12,8 @@ import ARCMetadata from "../Metadata/ARCMetadata";
 import RunMetadata from "../Metadata/RunMetadata";
 import WorkflowMetadata from "../Metadata/WorkflowMetadata";
 import { FileCacheProvider } from "../../ContextProvider";
-import {
-    crateArc,
-    crateId,
-    crateTree,
-    landingLocation,
-    type Crate,
-    type FileLocation,
-} from "../../crate";
+import { landingLocation, type Crate, type FileLocation } from "../../crate";
+import { crateArc, crateId, crateTree } from "../../crateData";
 import { findNodeAtPath } from "../../util/fileTree";
 import { buildSearchCache } from "../../util/searchCache";
 import { type ContentType, type TreeNode } from "../../util/types";

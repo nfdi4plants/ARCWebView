@@ -1,18 +1,9 @@
-import type { ARC } from '@nfdi4plants/arctrl';
-import { errorMessage } from './components/ProvenanceGraph/errorMessage';
-import { buildProvenanceIndex } from './provenance/buildIndex';
-import {
-    buildDataNodePaths,
-    graphToViewerTarget,
-    normalizePath,
-    viewerToNavigation,
-    type ViewerTarget,
-} from './provenance/linking';
+import { crateHasPath, crateProvenance, crateTree, registerCrate } from './crateData';
+import { graphToViewerTarget, normalizePath, viewerToNavigation, type ViewerTarget } from './provenance/linking';
 import type { Navigation } from './provenance/navigation';
-import type { ProvenanceIndex } from './provenance/types';
-import { loadCrate as readCrate, type CrateKind, type LoadedCrate } from './util/crateLoader';
-import { buildFileTree, findNodeAtPath } from './util/fileTree';
-import type { TreeNode } from './util/types';
+import { loadCrate as readCrate } from './util/crateLoader';
+
+export type CrateKind = 'arc' | 'run' | 'workflow';
 
 /**
  * A loaded crate. The components and the mapping functions take it as their input. It is created once per
@@ -28,22 +19,6 @@ export interface Crate {
 /** A place in the file browser. `table` names an annotation table of the isa file at `path`. */
 export type FileLocation = ViewerTarget;
 
-// A workflow crate has no provenance graph. A crate whose index cannot be built keeps the reason.
-export type CrateProvenance =
-    | { index: ProvenanceIndex; dataNodePaths: Map<string, string[]>; error?: undefined }
-    | { index?: undefined; error: string };
-
-interface CrateData {
-    id: number;
-    loaded: LoadedCrate;
-    tree?: TreeNode;
-    // null once it is known that the crate has no graph.
-    provenance?: CrateProvenance | null;
-}
-
-const dataOf = new WeakMap<Crate, CrateData>();
-let lastId = 0;
-
 /**
  * Parses the text of a `ro-crate-metadata.json`. Throws when the text is not a crate the viewer can read.
  * Parsing is the expensive part, so call it once per document and keep the result (in state or a memo).
@@ -52,60 +27,17 @@ let lastId = 0;
 export function loadCrate(json: string): Crate {
     const loaded = readCrate(json);
     const crate: Crate = Object.freeze({ kind: loaded.kind, landingPath: loaded.landingPath });
-    dataOf.set(crate, { id: ++lastId, loaded });
+    registerCrate(crate, loaded);
     // The components build the tree while they render. Building it here makes a crate whose tree cannot
     // be built fail in this call, where the caller can catch it.
     crateTree(crate);
     return crate;
 }
 
-function dataFor(crate: Crate): CrateData {
-    const data = dataOf.get(crate);
-    if (!data) throw new Error('This crate was not created by loadCrate.');
-    return data;
-}
-
-// A number that differs between crates. It keys what must start over for another crate.
-export function crateId(crate: Crate): number {
-    return dataFor(crate).id;
-}
-
-export function crateArc(crate: Crate): ARC {
-    return dataFor(crate).loaded.arc;
-}
-
-export function crateTree(crate: Crate): TreeNode {
-    const data = dataFor(crate);
-    return (data.tree ??= buildFileTree(data.loaded));
-}
-
-// Whether the file tree has the path. The empty path is the root.
-export function crateHasPath(crate: Crate, path: string): boolean {
-    return findNodeAtPath(crateTree(crate), path) !== null;
-}
-
 /** Where the file browser starts: the run or workflow folder of such a crate, and the root of any other. */
 export function landingLocation(crate: Crate): FileLocation {
     const path = crate.landingPath;
     return { path: path !== undefined && crateHasPath(crate, path) ? path : '' };
-}
-
-export function crateProvenance(crate: Crate): CrateProvenance | undefined {
-    const data = dataFor(crate);
-    if (data.provenance === undefined) {
-        if (crate.kind === 'workflow') {
-            data.provenance = null;
-        } else {
-            try {
-                const index = buildProvenanceIndex(data.loaded.arc);
-                data.provenance = { index, dataNodePaths: buildDataNodePaths(index) };
-            } catch (error) {
-                console.error('Could not build the provenance index', error);
-                data.provenance = { error: errorMessage(error) };
-            }
-        }
-    }
-    return data.provenance ?? undefined;
 }
 
 /**
