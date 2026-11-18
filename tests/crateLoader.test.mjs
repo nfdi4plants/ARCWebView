@@ -34,13 +34,13 @@ function mutateRoot(json, change) {
     return JSON.stringify(crate);
 }
 
-test('run crate loads as an ARC run with a landing path', () => {
+test('run crate loads as an ARC run with a isaFile path', () => {
     const loaded = loadCrate(runJson);
     assert.equal(loaded.kind, 'run');
     assert.equal(loaded.arc.Identifier, 'count-reads-demo');
     assert.equal(loaded.arc.Title, 'Count reads on demo samples');
-    assert.equal(loaded.landingPath, 'runs/count-reads-demo/isa.run.xlsx');
-    assert.ok(loaded.paths.includes(loaded.landingPath));
+    assert.equal(loaded.landingPath, 'runs/count-reads-demo');
+    assert.ok(loaded.paths.includes('runs/count-reads-demo/isa.run.xlsx'));
     assert.ok(loaded.paths.every((path) => !path.startsWith('https:')));
     assert.ok(!loaded.paths.includes('isa.investigation.xlsx'));
     assert.equal(loaded.arc.Runs.length, 1);
@@ -54,8 +54,8 @@ test('run crate loads as an ARC run with a landing path', () => {
 test('workflow crate loads as an ARC workflow', () => {
     const loaded = loadCrate(workflowJson);
     assert.equal(loaded.kind, 'workflow');
-    assert.equal(loaded.landingPath, 'workflows/count-reads/isa.workflow.xlsx');
-    assert.ok(loaded.paths.includes(loaded.landingPath));
+    assert.equal(loaded.landingPath, 'workflows/count-reads');
+    assert.ok(loaded.paths.includes('workflows/count-reads/isa.workflow.xlsx'));
     assert.equal(loaded.arc.Workflows[0].Version, '1.0.0');
     assert.equal(loaded.arc.Workflows[0].URI, 'https://example.org/workflows/count-reads');
     assert.equal(loaded.arc.Runs.length, 0);
@@ -83,9 +83,9 @@ test('full ARC asset loads as a plain ARC with the paths ARCtrl reports', () => 
     assert.deepEqual(loaded.paths, expected);
 });
 
-test('run crate without an isa.run.xlsx entity still gets the landing path from the ARC constructor', () => {
-    const landing = 'runs/count-reads-demo/isa.run.xlsx';
-    const removed = new Set(['./' + landing, './runs/count-reads-demo/']);
+test('run crate without an isa.run.xlsx entity still gets its run folder from the ARC constructor', () => {
+    const isaFile = 'runs/count-reads-demo/isa.run.xlsx';
+    const removed = new Set(['./' + isaFile, './runs/count-reads-demo/']);
     const crate = JSON.parse(runJson);
     crate['@graph'] = crate['@graph'].filter((node) => !removed.has(node['@id']));
     for (const node of crate['@graph']) {
@@ -98,11 +98,11 @@ test('run crate without an isa.run.xlsx entity still gets the landing path from 
 
     const legacy = Array.from(JsonController.ARC.fromROCrateJsonString(json).FileSystem.Tree.ToFilePaths(true));
     const loaded = loadCrate(json);
-    // Guard: the legacy reader has no file for the landing path, so the loader's path comes from the ARC constructor.
-    assert.ok(!legacy.includes(landing));
+    // Guard: the legacy reader has no isa.run.xlsx, so the loader's copy comes from the ARC constructor.
+    assert.ok(!legacy.includes(isaFile));
     assert.equal(loaded.kind, 'run');
-    assert.equal(loaded.landingPath, landing);
-    assert.ok(loaded.paths.includes(landing));
+    assert.equal(loaded.landingPath, 'runs/count-reads-demo');
+    assert.ok(loaded.paths.includes(isaFile));
 });
 
 test('run crate without an about entry throws', () => {

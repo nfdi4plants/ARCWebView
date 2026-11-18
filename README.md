@@ -44,7 +44,7 @@ No prop or option selects the kind. The viewer detects it from the crate. The Wo
 
 The viewer reads JSON only. Crates downloaded from WorkflowHub are zip files, so extract `ro-crate-metadata.json` from the zip and pass or upload that file.
 
-A crate opens directly on its run or workflow metadata page. A run crate also shows its process tables and the provenance graph. A workflow crate has no provenance graph.
+A crate opens on its run or workflow folder (`runs/<id>` or `workflows/<id>`). A run crate also shows its process tables and the provenance graph. A workflow crate has no provenance graph.
 
 If a file declares one of these profiles but cannot be read as an ARC run or workflow (for example a crate from another tool without a root `identifier`), the viewer shows an error with the reason.
 

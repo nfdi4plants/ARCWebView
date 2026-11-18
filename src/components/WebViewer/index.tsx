@@ -852,7 +852,7 @@ export default function WebViewer({
         provenanceHeadingRef.current?.focus({ preventScroll: true });
     };
 
-    // A run or workflow crate opens on its isa file. Every other file opens on the root.
+    // A run or workflow crate opens on its run or workflow folder. Every other file opens on the root.
     const landingPath = loaded.value?.landingPath;
     useEffect(() => {
         if (tree.value) {

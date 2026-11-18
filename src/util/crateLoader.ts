@@ -18,7 +18,7 @@ export interface LoadedCrate {
     kind: CrateKind;
     /** File tree paths for the viewer. */
     paths: string[];
-    /** The isa file the viewer opens first: runs/<id>/isa.run.xlsx or workflows/<id>/isa.workflow.xlsx. */
+    /** The folder the viewer opens first: runs/<id> or workflows/<id>. */
     landingPath?: string;
 }
 
@@ -114,10 +114,7 @@ function readRunOrWorkflow(
         base.License
     );
 
-    const landingPath =
-        kind === 'run'
-            ? `runs/${item.Identifier}/isa.run.xlsx`
-            : `workflows/${item.Identifier}/isa.workflow.xlsx`;
+    const landingPath = kind === 'run' ? `runs/${item.Identifier}` : `workflows/${item.Identifier}`;
     // The ARC constructor already adds the virtual isa.run.xlsx or isa.workflow.xlsx to the file tree.
     const paths = collectPaths(arc, kind);
 
