@@ -8,11 +8,11 @@ interface FileViewerContentProps {
 
 interface FileViewerProps {
   nodes: FileViewerContent[]
-  // The name of the tab that is open when the viewer mounts. Without a match the first tab opens.
+  // The annotation table whose tab is open when the viewer mounts. Without a match the first tab opens.
   initialTable?: string
-  // Called with the name of the tab that becomes visible, whichever way the user changes it (click, Enter,
-  // Space, arrow keys, Home or End). A tab without a name reports undefined.
-  onSelectTab?: (name: string | undefined) => void
+  // Called with the annotation table of the tab that becomes visible, whichever way the user changes it
+  // (click, Enter, Space, arrow keys, Home or End). A tab that shows no table reports undefined.
+  onSelectTab?: (table: string | undefined) => void
 }
 
 function FileViewerContent({ file }: FileViewerContentProps) {
@@ -49,11 +49,12 @@ export default function FileViewer ({nodes, initialTable, onSelectTab}: FileView
     }
   )
 
-  const initialIndex = initialTable === undefined ? -1 : nodes.findIndex(node => node.name === initialTable);
+  const initialIndex = initialTable === undefined ? -1 : nodes.findIndex(node => node.table === initialTable);
 
   // UnderlinePanels keeps the selection itself. Its onChange also reports the changes that keyboard
   // navigation makes, which never call the onSelect of a Tab. The values are tab positions, because two
-  // tabs can carry the same name (a table named "Metadata") and Primer rejects duplicate values.
+  // tabs can carry the same name (a table named "Metadata") and Primer rejects duplicate values. A tab is
+  // matched and reported by its table, so the metadata tab is never taken for a table of the same name.
   return (
     <div className="border rounded-2">
       {loading  
@@ -63,7 +64,7 @@ export default function FileViewer ({nodes, initialTable, onSelectTab}: FileView
             aria-label="Select a file"
             id="panels"
             defaultValue={initialIndex >= 0 ? String(initialIndex) : undefined}
-            onChange={({ value }) => onSelectTab?.(nodes[Number(value)]?.name)}
+            onChange={({ value }) => onSelectTab?.(nodes[Number(value)]?.table)}
           >
           {nodes.map((node, index) => (
             <UnderlinePanels.Tab key={index} value={String(index)}>{node.name || node.node.name}</UnderlinePanels.Tab>

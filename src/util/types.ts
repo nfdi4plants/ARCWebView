@@ -15,6 +15,8 @@ export type ContentType = "text" | "binary" | "jsx";
 export type FileViewerContent = {
   node: TreeNode;
   name?: string;
+  // The name of the annotation table that the tab shows. A tab that shows no table (metadata) leaves it out.
+  table?: string;
   content?: () => Promise<FileTypes>;
   component?: React.JSX.Element;
   contentType?: ContentType; // Default content type if not specified

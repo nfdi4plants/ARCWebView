@@ -350,6 +350,7 @@ function FileViewerAssay({
                 ...assay.Tables.map((table) => ({
                     node: currentTreeNode,
                     name: table.Name,
+                    table: table.Name,
                     contentType: "jsx" as ContentType,
                     component: <AnnotationTable table={table} />,
                 })),
@@ -390,6 +391,7 @@ function FileViewerStudy({
                 ...study.Tables.map((table) => ({
                     node: currentTreeNode,
                     name: table.Name,
+                    table: table.Name,
                     contentType: "jsx" as ContentType,
                     component: <AnnotationTable table={table} />,
                 })),
@@ -431,6 +433,7 @@ function FileViewerRun({
                 ...run.Tables.map((table) => ({
                     node: currentTreeNode,
                     name: table.Name,
+                    table: table.Name,
                     contentType: "jsx" as ContentType,
                     component: <AnnotationTable table={table} />,
                 })),
