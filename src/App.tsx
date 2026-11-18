@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 const WebViewer = lazy(() => import('./components/WebViewer'));
 import { Blankslate } from '@primer/react/experimental'
-import { FileCacheProvider, SearchCacheProvider } from './ContextProvider';
 import { Button, Spinner, Stack, Banner } from '@primer/react'
 import { UploadIcon, SearchIcon } from '@primer/octicons-react'
 import { resolveViewerConfig } from './config';
@@ -124,23 +123,20 @@ function App(props: WebViewerProps) {
     }
 
     return (
-        <FileCacheProvider>
-            <SearchCacheProvider>
-                {
-                    error && <ErrorBanner error={error} clearError={() => setError(null)} />
-                }
-                {
-                    loading
-                        ? <SkeletonTable />
-                        : !jsonString
-                            ? <BlankSlate handleClickExampleData={handleClickExampleData} setJsonString={setJsonString} />
-                            : <Suspense fallback={<SkeletonTable />}>
-                                <WebViewer jsonString={jsonString} clearJsonCallback={showUnloadButton ? clear : undefined} layout={layout} />
-                            </Suspense>
-                }
-            </SearchCacheProvider>
-        </FileCacheProvider>
-
+        <>
+            {
+                error && <ErrorBanner error={error} clearError={() => setError(null)} />
+            }
+            {
+                loading
+                    ? <SkeletonTable />
+                    : !jsonString
+                        ? <BlankSlate handleClickExampleData={handleClickExampleData} setJsonString={setJsonString} />
+                        : <Suspense fallback={<SkeletonTable />}>
+                            <WebViewer jsonString={jsonString} clearJsonCallback={showUnloadButton ? clear : undefined} layout={layout} />
+                        </Suspense>
+            }
+        </>
     )
 }
 

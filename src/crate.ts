@@ -84,6 +84,12 @@ export function crateHasPath(crate: Crate, path: string): boolean {
     return findNodeAtPath(crateTree(crate), path) !== null;
 }
 
+/** Where the file browser starts: the run or workflow folder of such a crate, and the root of any other. */
+export function landingLocation(crate: Crate): FileLocation {
+    const path = crate.landingPath;
+    return { path: path !== undefined && crateHasPath(crate, path) ? path : '' };
+}
+
 export function crateProvenance(crate: Crate): CrateProvenance | undefined {
     const data = dataFor(crate);
     if (data.provenance === undefined) {

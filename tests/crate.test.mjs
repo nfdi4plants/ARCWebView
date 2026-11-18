@@ -10,6 +10,7 @@ const {
     crateTree,
     crateHasPath,
     crateProvenance,
+    landingLocation,
     locationToNavigation,
     navigationToLocation,
 } = await importTs('../src/crate.ts');
@@ -71,6 +72,12 @@ test('the tree holds the folders and files of the crate, and the empty path is i
     assert.ok(crateHasPath(run, RUN_ISA));
     assert.ok(!crateHasPath(run, `${RUN_FOLDER}/absent.txt`));
     assert.ok(!crateHasPath(run, 'isa.investigation.xlsx'));
+});
+
+test('the landing location is the run or workflow folder, and the root of a full ARC', () => {
+    assert.deepEqual(landingLocation(loadCrate(runJson)), { path: RUN_FOLDER });
+    assert.deepEqual(landingLocation(loadCrate(workflowJson)), { path: 'workflows/count-reads' });
+    assert.deepEqual(landingLocation(loadCrate(arcJson)), { path: '' });
 });
 
 test('a workflow crate has no provenance and no mapping in either direction', () => {

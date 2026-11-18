@@ -1,12 +1,16 @@
 import { TreeView } from "@primer/react";
 import { type TreeNode } from "../../util/types";
 import Icons from "../Icons";
-import { memo } from "react";
-interface FileTreeProps {
-  tree: TreeNode | undefined;
-  expandedFolderIds: string[];
-  currentTreeNode: TreeNode | undefined;
-  navigateTo: (path: string) => void;
+import { memo, useMemo } from "react";
+import { crateTree, type Crate } from "../../crate";
+import { findPathToNode } from "../../util/fileTree";
+
+export interface FileTreeProps {
+  crate: Crate;
+  // The path of the item that is marked as the current one. No item is marked without it.
+  currentPath?: string;
+  // Called with the path of the file or folder the user selects.
+  onSelect: (path: string) => void;
 }
 
 function isXlsxFile(name: string): boolean {
@@ -15,17 +19,17 @@ function isXlsxFile(name: string): boolean {
 
 const MemoRenderNode = memo(function RenderNode({
   node,
-  currentTreeNode,
+  currentPath,
   expandedFolderIds = [],
-  navigateTo,
+  onSelect,
 }: {
   node: TreeNode;
-  currentTreeNode: TreeNode | undefined;
+  currentPath: string | undefined;
   expandedFolderIds?: string[];
-  navigateTo: (path: string) => void;
+  onSelect: (path: string) => void;
 }) {
   const isFolder = node.type === "folder";
-  const isCurrent = node.id === currentTreeNode?.id;
+  const isCurrent = node.id === currentPath;
   const shouldExpand = expandedFolderIds.includes(node.id);
 
   return (
@@ -34,7 +38,7 @@ const MemoRenderNode = memo(function RenderNode({
       id={node.id}
       current={isCurrent}
       defaultExpanded={shouldExpand}
-      onSelect={() => navigateTo(node.id)}
+      onSelect={() => onSelect(node.id)}
     >
       <TreeView.LeadingVisual>
         {isFolder ? (
@@ -52,9 +56,9 @@ const MemoRenderNode = memo(function RenderNode({
             <RenderNode
               key={child.id}
               node={child}
-              currentTreeNode={currentTreeNode}
+              currentPath={currentPath}
               expandedFolderIds={expandedFolderIds}
-              navigateTo={navigateTo}
+              onSelect={onSelect}
             />
           ))}
         </TreeView.SubTree>
@@ -64,33 +68,39 @@ const MemoRenderNode = memo(function RenderNode({
 }, (nodePropsPrev, nodePropsNext) => {
   return (
     nodePropsPrev.node === nodePropsNext.node &&
-    nodePropsPrev.currentTreeNode === nodePropsNext.currentTreeNode &&
-    nodePropsPrev.expandedFolderIds === nodePropsNext.expandedFolderIds
+    nodePropsPrev.currentPath === nodePropsNext.currentPath &&
+    nodePropsPrev.expandedFolderIds === nodePropsNext.expandedFolderIds &&
+    nodePropsPrev.onSelect === nodePropsNext.onSelect
   );
 });
 
-/// Can be improved by splitting "renderNode" into its own component with memoization. Accessing "currentNode" from a context. This would
+// The folders and files of a crate as a tree. It holds no navigation of its own: the owner passes the
+// current path and gets each selection.
 export default function FileTree({
-  tree,
-  currentTreeNode,
-  expandedFolderIds,
-  navigateTo,
+  crate,
+  currentPath,
+  onSelect,
 }: FileTreeProps) {
+  const tree = crateTree(crate);
 
+  const expandedFolderIds = useMemo(() => {
+    return currentPath
+      ? findPathToNode(tree.children || [], currentPath) ?? []
+      : [];
+  }, [tree, currentPath]);
 
-  if (!tree || !tree.children || !currentTreeNode) {
+  if (!tree.children || tree.children.length === 0) {
     return <div>No files to display</div>;
   }
 
   return (
-    <TreeView aria-label="File Tree">{tree.children?.map(node =>
-      
+    <TreeView aria-label="File Tree">{tree.children.map(node =>
       <MemoRenderNode
         key={node.id}
         node={node}
-        currentTreeNode={currentTreeNode}
+        currentPath={currentPath}
         expandedFolderIds={expandedFolderIds}
-        navigateTo={navigateTo}
+        onSelect={onSelect}
       />
     )}</TreeView>
   );

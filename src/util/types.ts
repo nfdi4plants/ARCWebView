@@ -33,9 +33,4 @@ export interface SearchCache {
   name: string
   path: string
   type: "file" | "header" | "isa-title" | "isa-table" | "person"
-}; // adjust based on your file types
-
-export type SearchCacheContextType = {
-    cache: SearchCache[];
-    setCache: React.Dispatch<React.SetStateAction<SearchCache[]>>;
 };

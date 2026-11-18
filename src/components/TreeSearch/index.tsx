@@ -1,12 +1,12 @@
 import { Autocomplete, FormControl, ActionList, useFocusZone } from '@primer/react'
 import { Dialog } from '@primer/react/experimental'
-import { useSearchCacheContext } from '../../contexts'
 import type { SearchCache } from '../../util/types'
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Icons from '../Icons';
 
 interface TreeSearchProps {
+    cache: SearchCache[];
     navigateTo: (path: string) => void;
 }
 interface MyMenuItem {
@@ -108,9 +108,7 @@ function findItemsFromCache(cache: SearchCache[], text: string): MyMenuItem[] {
     }
 }
 
-export default function TreeSearch({ navigateTo }: TreeSearchProps) {
-    const { cache } = useSearchCacheContext()
-    
+export default function TreeSearch({ cache, navigateTo }: TreeSearchProps) {
     const [loading, setLoading] = useState(false);
     const fileItems = cacheArrayToDistinctMenuItems(cache.filter(item => item.type === "file").slice(0, 10));
     const [items, setItems] = useState<MyMenuItem[]>(fileItems);
