@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type JSX } from "react";
 import {
-    JsonController,
     type ARC,
     type OntologyAnnotation,
     type ArcInvestigation,
@@ -34,6 +33,7 @@ import {
     type SearchCache,
     type TreeNode,
 } from "../../util/types";
+import { loadCrate } from "../../util/crateLoader";
 import TreeSearch from "../TreeSearch";
 import { useSearchCacheContext } from "../../contexts";
 import AnnotationTable from "../AnnotationTable";
@@ -667,14 +667,17 @@ export default function WebViewer({
         false
     );
 
-    const ldGraph = useMemoAsync(async () => {
-        const r = JsonController.LDGraph.fromROCrateJsonString(jsonString);
-        return r;
-    }, [jsonString]);
-
-    const arc = useMemoAsync(async () => {
-        return JsonController.ARC.fromROCrateJsonString(jsonString);
-    }, [jsonString]);
+    const loaded = useMemoAsync(async () => loadCrate(jsonString), [jsonString]);
+    // The tree and the provenance index depend on these objects, so they keep their identity until the crate changes.
+    const arc = useMemo(
+        () => ({ loading: loaded.loading, value: loaded.value?.arc }),
+        [loaded]
+    );
+    const ldGraph = useMemo(
+        () => ({ value: loaded.value?.ldGraph }),
+        [loaded]
+    );
+    const isWorkflowCrate = loaded.value?.kind === "workflow";
 
     const tree = useMemoAsync(async () => {
         if (arc.value && ldGraph.value) {
@@ -711,8 +714,8 @@ export default function WebViewer({
                     });
                 }
             });
-            const paths = arc.value.FileSystem.Tree.ToFilePaths(true);
-            const tree = pathsToFileTree(Array.from(paths), fileIdExportMetadataMap);
+            const paths = loaded.value?.paths ?? [];
+            const tree = pathsToFileTree(paths, fileIdExportMetadataMap);
             return tree;
         } else {
             return undefined;
@@ -808,7 +811,7 @@ export default function WebViewer({
     );
     const graphTarget = useMemo(
         () =>
-            index && dataNodePaths && currentTreeNode
+            index && dataNodePaths && currentTreeNode && !isWorkflowCrate
                 ? viewerToNavigation(
                       currentTreeNode.id,
                       selectedTable,
@@ -816,7 +819,7 @@ export default function WebViewer({
                       dataNodePaths
                   )
                 : undefined,
-        [index, dataNodePaths, currentTreeNode, selectedTable]
+        [index, dataNodePaths, currentTreeNode, selectedTable, isWorkflowCrate]
     );
 
     const openInViewer = (target: ViewerTarget) => {
@@ -849,11 +852,16 @@ export default function WebViewer({
         provenanceHeadingRef.current?.focus({ preventScroll: true });
     };
 
+    // A run or workflow crate opens on its run or workflow folder. Every other file opens on the root.
+    const landingPath = loaded.value?.landingPath;
     useEffect(() => {
         if (tree.value) {
-            setCurrentTreeNode(tree.value);
+            setCurrentTreeNode(
+                (landingPath && findNodeAtPath(tree.value, landingPath)) ||
+                    tree.value
+            );
         }
-    }, [tree.value]);
+    }, [tree.value, landingPath]);
 
     useEffect(() => {
         if (tree.value && arc.value) {
@@ -881,7 +889,7 @@ export default function WebViewer({
     );
 
     const error: string | undefined =
-        [ldGraph.error?.message, arc.error?.message, tree.error?.message]
+        [loaded.error?.message, tree.error?.message]
             .filter(Boolean)
             .join("\n") || undefined;
 
@@ -1033,7 +1041,7 @@ export default function WebViewer({
                                     ]}
                                 />
                             )}
-                        {arc.value && (
+                        {arc.value && !isWorkflowCrate && (
                             <section
                                 ref={provenanceRef}
                                 aria-labelledby="provenance-graph-heading"

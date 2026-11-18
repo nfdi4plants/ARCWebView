@@ -1,0 +1,528 @@
+{
+  "@context": [
+    "https://w3id.org/ro/crate/1.2/context",
+    {
+      "Sample": "https://bioschemas.org/Sample",
+      "LabProtocol": "https://bioschemas.org/LabProtocol",
+      "LabProcess": "https://bioschemas.org/LabProcess",
+      "computationalTool": "https://bioschemas.org/properties/computationalTool",
+      "labEquipment": "https://bioschemas.org/properties/labEquipment",
+      "reagent": "https://bioschemas.org/properties/reagent",
+      "intendedUse": "https://bioschemas.org/properties/intendedUse",
+      "executesLabProtocol": "https://bioschemas.org/properties/executesLabProtocol",
+      "parameterValue": "https://bioschemas.org/properties/parameterValue",
+      "columnIndex": "https://w3id.org/ro/terms/arc#columnIndex"
+    }
+  ],
+  "@graph": [
+    {
+      "@id": "#Organization_Example_Institute",
+      "@type": "Organization",
+      "name": "Example Institute"
+    },
+    {
+      "@id": "#OA_researcher",
+      "@type": "DefinedTerm",
+      "name": "researcher"
+    },
+    {
+      "@id": "http://orcid.org/0000-0002-1825-0097",
+      "@type": "Person",
+      "givenName": "Alex",
+      "affiliation": {
+        "@id": "#Organization_Example_Institute"
+      },
+      "email": "alex.example@example.org",
+      "familyName": "Example",
+      "jobTitle": {
+        "@id": "#OA_researcher"
+      }
+    },
+    {
+      "@id": "./runs/prepare-samples/reads/sample-a.fastq.gz",
+      "@type": "File",
+      "name": "./runs/prepare-samples/reads/sample-a.fastq.gz"
+    },
+    {
+      "@id": "./runs/count-reads-demo/trimmed/sample-a.trimmed.fastq.gz",
+      "@type": "File",
+      "name": "./runs/count-reads-demo/trimmed/sample-a.trimmed.fastq.gz"
+    },
+    {
+      "@id": "./runs/prepare-samples/reads/sample-b.fastq.gz",
+      "@type": "File",
+      "name": "./runs/prepare-samples/reads/sample-b.fastq.gz"
+    },
+    {
+      "@id": "./runs/count-reads-demo/trimmed/sample-b.trimmed.fastq.gz",
+      "@type": "File",
+      "name": "./runs/count-reads-demo/trimmed/sample-b.trimmed.fastq.gz"
+    },
+    {
+      "@id": "./runs/count-reads-demo/results/counts.tsv",
+      "@type": "File",
+      "name": "./runs/count-reads-demo/results/counts.tsv"
+    },
+    {
+      "@id": "#FormalParameter_R_count-reads-demo_samples",
+      "@type": "FormalParameter",
+      "additionalType": "File",
+      "name": "samples",
+      "valueRequired": true
+    },
+    {
+      "@id": "./runs/prepare-samples/samples.csv",
+      "@type": "File",
+      "name": "./runs/prepare-samples/samples.csv",
+      "exampleOfWork": {
+        "@id": "#FormalParameter_R_count-reads-demo_samples"
+      }
+    },
+    {
+      "@id": "#FormalParameter_R_count-reads-demo_readsFolder",
+      "@type": "FormalParameter",
+      "additionalType": "Directory",
+      "name": "readsFolder",
+      "valueRequired": true
+    },
+    {
+      "@id": "#FormalParameter_R_count-reads-demo_label",
+      "@type": "FormalParameter",
+      "additionalType": "string",
+      "name": "label",
+      "valueRequired": true
+    },
+    {
+      "@id": "#FormalParameter_R_count-reads-demo_workdir",
+      "@type": "FormalParameter",
+      "additionalType": "Directory",
+      "name": "workdir",
+      "valueRequired": true
+    },
+    {
+      "@id": "#FormalParameter_R_count-reads-demo_results",
+      "@type": "FormalParameter",
+      "additionalType": "Directory",
+      "name": "results",
+      "valueRequired": true
+    },
+    {
+      "@id": "https://w3id.org/workflowhub/workflow-ro-crate#cwl",
+      "@type": "ComputerLanguage",
+      "name": "Common Workflow Language",
+      "alternateName": "CWL",
+      "identifier": {
+        "@id": "https://w3id.org/cwl/v1.2/"
+      },
+      "url": {
+        "@id": "https://www.commonwl.org/"
+      }
+    },
+    {
+      "@id": "WorkflowStep_runs/count-reads-demo/run.cwl_count-reads",
+      "@type": "ComputationalWorkflow",
+      "name": "count-reads",
+      "identifier": "./workflows/count-reads/workflow.cwl"
+    },
+    {
+      "@id": "#Organization_DataPLANT",
+      "@type": "Organization",
+      "name": "DataPLANT"
+    },
+    {
+      "@id": "./runs/count-reads-demo/run.cwl",
+      "@type": [
+        "File",
+        "ComputationalWorkflow",
+        "SoftwareSourceCode",
+        "LabProtocol"
+      ],
+      "additionalType": "WorkflowProtocol",
+      "input": [
+        {
+          "@id": "#FormalParameter_R_count-reads-demo_samples"
+        },
+        {
+          "@id": "#FormalParameter_R_count-reads-demo_readsFolder"
+        },
+        {
+          "@id": "#FormalParameter_R_count-reads-demo_label"
+        },
+        {
+          "@id": "#FormalParameter_R_count-reads-demo_workdir"
+        }
+      ],
+      "output": {
+        "@id": "#FormalParameter_R_count-reads-demo_results"
+      },
+      "name": "./runs/count-reads-demo/run.cwl",
+      "programmingLanguage": {
+        "@id": "https://w3id.org/workflowhub/workflow-ro-crate#cwl"
+      },
+      "hasPart": {
+        "@id": "WorkflowStep_runs/count-reads-demo/run.cwl_count-reads"
+      },
+      "creator": {
+        "@id": "http://orcid.org/0000-0002-1825-0097"
+      },
+      "sdPublisher": {
+        "@id": "#Organization_DataPLANT"
+      },
+      "dateCreated": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "@id": "./runs/prepare-samples/reads/",
+      "@type": "Dataset",
+      "hasPart": [
+        {
+          "@id": "./runs/prepare-samples/reads/sample-a.fastq.gz"
+        },
+        {
+          "@id": "./runs/prepare-samples/reads/sample-b.fastq.gz"
+        }
+      ]
+    },
+    {
+      "@id": "./runs/count-reads-demo/run.yml",
+      "@type": "File",
+      "name": "./runs/count-reads-demo/run.yml"
+    },
+    {
+      "@id": "./runs/count-reads-demo/isa.run.xlsx",
+      "@type": "File",
+      "name": "./runs/count-reads-demo/isa.run.xlsx"
+    },
+    {
+      "@id": "./runs/count-reads-demo/",
+      "@type": "Dataset",
+      "hasPart": [
+        {
+          "@id": "./runs/count-reads-demo/run.cwl"
+        },
+        {
+          "@id": "./runs/count-reads-demo/run.yml"
+        },
+        {
+          "@id": "./runs/count-reads-demo/isa.run.xlsx"
+        },
+        {
+          "@id": "./runs/count-reads-demo/trimmed/sample-a.trimmed.fastq.gz"
+        },
+        {
+          "@id": "./runs/count-reads-demo/trimmed/sample-b.trimmed.fastq.gz"
+        },
+        {
+          "@id": "./runs/count-reads-demo/results/counts.tsv"
+        }
+      ]
+    },
+    {
+      "@id": "./workflows/count-reads/workflow.cwl",
+      "@type": "File",
+      "name": "./workflows/count-reads/workflow.cwl"
+    },
+    {
+      "@id": "#Protocol_trim",
+      "@type": "LabProtocol"
+    },
+    {
+      "@id": "#ParameterValue_minimum_quality_20",
+      "@type": "PropertyValue",
+      "additionalType": "ParameterValue",
+      "name": "minimum quality",
+      "value": "20",
+      "valueReference": "http://purl.obolibrary.org/obo/EX_0000001",
+      "columnIndex": "0"
+    },
+    {
+      "@id": "#WorkflowInvocation_count-reads-demo_trim_0",
+      "@type": [
+        "CreateAction",
+        "LabProcess"
+      ],
+      "additionalType": "WorkflowInvocation",
+      "name": "trim_0",
+      "object": {
+        "@id": "./runs/prepare-samples/reads/sample-a.fastq.gz"
+      },
+      "result": {
+        "@id": "./runs/count-reads-demo/trimmed/sample-a.trimmed.fastq.gz"
+      },
+      "instrument": {
+        "@id": "./runs/count-reads-demo/run.cwl"
+      },
+      "executesLabProtocol": {
+        "@id": "#Protocol_trim"
+      },
+      "parameterValue": {
+        "@id": "#ParameterValue_minimum_quality_20"
+      }
+    },
+    {
+      "@id": "#WorkflowInvocation_count-reads-demo_trim_1",
+      "@type": [
+        "CreateAction",
+        "LabProcess"
+      ],
+      "additionalType": "WorkflowInvocation",
+      "name": "trim_1",
+      "object": {
+        "@id": "./runs/prepare-samples/reads/sample-b.fastq.gz"
+      },
+      "result": {
+        "@id": "./runs/count-reads-demo/trimmed/sample-b.trimmed.fastq.gz"
+      },
+      "instrument": {
+        "@id": "./runs/count-reads-demo/run.cwl"
+      },
+      "executesLabProtocol": {
+        "@id": "#Protocol_trim"
+      },
+      "parameterValue": {
+        "@id": "#ParameterValue_minimum_quality_20"
+      }
+    },
+    {
+      "@id": "#Protocol_count",
+      "@type": "LabProtocol"
+    },
+    {
+      "@id": "#WorkflowInvocation_count-reads-demo_count_0",
+      "@type": [
+        "CreateAction",
+        "LabProcess"
+      ],
+      "additionalType": "WorkflowInvocation",
+      "name": "count_0",
+      "object": {
+        "@id": "./runs/count-reads-demo/trimmed/sample-a.trimmed.fastq.gz"
+      },
+      "result": {
+        "@id": "./runs/count-reads-demo/results/counts.tsv"
+      },
+      "instrument": {
+        "@id": "./runs/count-reads-demo/run.cwl"
+      },
+      "executesLabProtocol": {
+        "@id": "#Protocol_count"
+      }
+    },
+    {
+      "@id": "#WorkflowInvocation_count-reads-demo_count_1",
+      "@type": [
+        "CreateAction",
+        "LabProcess"
+      ],
+      "additionalType": "WorkflowInvocation",
+      "name": "count_1",
+      "object": {
+        "@id": "./runs/count-reads-demo/trimmed/sample-b.trimmed.fastq.gz"
+      },
+      "result": {
+        "@id": "./runs/count-reads-demo/results/counts.tsv"
+      },
+      "instrument": {
+        "@id": "./runs/count-reads-demo/run.cwl"
+      },
+      "executesLabProtocol": {
+        "@id": "#Protocol_count"
+      }
+    },
+    {
+      "@id": "#WorkflowParameter_R_count-reads-demo_readsFolder",
+      "@type": "PropertyValue",
+      "additionalType": "WorkflowInput",
+      "name": "readsFolder",
+      "exampleOfWork": {
+        "@id": "#FormalParameter_R_count-reads-demo_readsFolder"
+      },
+      "value": {
+        "@id": "./runs/prepare-samples/reads/"
+      }
+    },
+    {
+      "@id": "#WorkflowParameter_R_count-reads-demo_label",
+      "@type": "PropertyValue",
+      "additionalType": "WorkflowInput",
+      "name": "label",
+      "exampleOfWork": {
+        "@id": "#FormalParameter_R_count-reads-demo_label"
+      },
+      "value": "demo"
+    },
+    {
+      "@id": "#WorkflowParameter_R_count-reads-demo_workdir",
+      "@type": "PropertyValue",
+      "additionalType": "WorkflowInput",
+      "name": "workdir",
+      "exampleOfWork": {
+        "@id": "#FormalParameter_R_count-reads-demo_workdir"
+      },
+      "value": {
+        "@id": "./runs/count-reads-demo/"
+      }
+    },
+    {
+      "@id": "#WorkflowInvocation_count-reads-demo",
+      "@type": [
+        "CreateAction",
+        "LabProcess"
+      ],
+      "additionalType": "WorkflowInvocation",
+      "name": "count-reads-demo",
+      "object": [
+        {
+          "@id": "./runs/prepare-samples/samples.csv"
+        },
+        {
+          "@id": "#WorkflowParameter_R_count-reads-demo_readsFolder"
+        },
+        {
+          "@id": "#WorkflowParameter_R_count-reads-demo_label"
+        },
+        {
+          "@id": "#WorkflowParameter_R_count-reads-demo_workdir"
+        }
+      ],
+      "instrument": {
+        "@id": "./runs/count-reads-demo/run.cwl"
+      },
+      "executesLabProtocol": {
+        "@id": "./runs/count-reads-demo/run.cwl"
+      }
+    },
+    {
+      "@id": "https://w3id.org/ro/wfrun/process/0.5",
+      "@type": "CreativeWork",
+      "name": "Process Run Crate",
+      "version": "0.5"
+    },
+    {
+      "@id": "https://w3id.org/ro/wfrun/workflow/0.5",
+      "@type": "CreativeWork",
+      "name": "Workflow Run Crate",
+      "version": "0.5"
+    },
+    {
+      "@id": "https://w3id.org/workflowhub/workflow-ro-crate/1.0",
+      "@type": "CreativeWork",
+      "name": "Workflow RO-Crate",
+      "version": "1.0"
+    },
+    {
+      "@id": "https://spdx.org/licenses/CC-BY-4.0",
+      "@type": "CreativeWork",
+      "text": "This invented paragraph is a placeholder for the Creative Commons Attribution 4.0 International license (CC BY 4.0). It belongs to a synthetic test fixture and grants no rights."
+    },
+    {
+      "@id": "./",
+      "@type": "Dataset",
+      "description": "Runs the count-reads workflow on two invented samples.",
+      "name": "Count reads on demo samples",
+      "identifier": "count-reads-demo",
+      "creator": {
+        "@id": "http://orcid.org/0000-0002-1825-0097"
+      },
+      "hasPart": [
+        {
+          "@id": "./runs/prepare-samples/reads/sample-a.fastq.gz"
+        },
+        {
+          "@id": "./runs/count-reads-demo/trimmed/sample-a.trimmed.fastq.gz"
+        },
+        {
+          "@id": "./runs/prepare-samples/reads/sample-b.fastq.gz"
+        },
+        {
+          "@id": "./runs/count-reads-demo/trimmed/sample-b.trimmed.fastq.gz"
+        },
+        {
+          "@id": "./runs/count-reads-demo/results/counts.tsv"
+        },
+        {
+          "@id": "./runs/prepare-samples/samples.csv"
+        },
+        {
+          "@id": "./runs/count-reads-demo/run.cwl"
+        },
+        {
+          "@id": "./runs/prepare-samples/reads/"
+        },
+        {
+          "@id": "./runs/count-reads-demo/"
+        },
+        {
+          "@id": "./workflows/count-reads/workflow.cwl"
+        }
+      ],
+      "mentions": [
+        {
+          "@id": "#WorkflowInvocation_count-reads-demo_trim_0"
+        },
+        {
+          "@id": "#WorkflowInvocation_count-reads-demo_trim_1"
+        },
+        {
+          "@id": "#WorkflowInvocation_count-reads-demo_count_0"
+        },
+        {
+          "@id": "#WorkflowInvocation_count-reads-demo_count_1"
+        },
+        {
+          "@id": "#WorkflowInvocation_count-reads-demo"
+        }
+      ],
+      "about": [
+        {
+          "@id": "#WorkflowInvocation_count-reads-demo_trim_0"
+        },
+        {
+          "@id": "#WorkflowInvocation_count-reads-demo_trim_1"
+        },
+        {
+          "@id": "#WorkflowInvocation_count-reads-demo_count_0"
+        },
+        {
+          "@id": "#WorkflowInvocation_count-reads-demo_count_1"
+        },
+        {
+          "@id": "#WorkflowInvocation_count-reads-demo"
+        }
+      ],
+      "mainEntity": {
+        "@id": "./runs/count-reads-demo/run.cwl"
+      },
+      "conformsTo": [
+        {
+          "@id": "https://w3id.org/ro/wfrun/process/0.5"
+        },
+        {
+          "@id": "https://w3id.org/ro/wfrun/workflow/0.5"
+        },
+        {
+          "@id": "https://w3id.org/workflowhub/workflow-ro-crate/1.0"
+        }
+      ],
+      "dateCreated": "2025-01-01T00:00:00.000Z",
+      "datePublished": "2025-01-01T00:00:00.000Z",
+      "license": {
+        "@id": "https://spdx.org/licenses/CC-BY-4.0"
+      }
+    },
+    {
+      "@id": "ro-crate-metadata.json",
+      "@type": "CreativeWork",
+      "conformsTo": [
+        {
+          "@id": "https://w3id.org/ro/crate/1.1"
+        },
+        {
+          "@id": "https://w3id.org/workflowhub/workflow-ro-crate/1.0"
+        }
+      ],
+      "about": {
+        "@id": "./"
+      }
+    }
+  ]
+}
