@@ -38,11 +38,11 @@ createRoot(document.getElementById('root')!).render(
 
 # Supported input
 
-The viewer reads the `ro-crate-metadata.json` of a full ARC. It also reads the file of a Workflow RO-Crate (one ARC workflow) and of a Workflow Run Crate (one ARC run), as ARCtrl writes them with `writeWorkflowAsCrate` and `writeRunAsCrate`. The DataPLANT endpoint-submission service uploads this format to WorkflowHub. Pass the file through the ROC-JSON loader (see [Entry points and configuration](#entry-points-and-configuration)) or use "Upload ROC-JSON" in the demo.
+The viewer reads the `ro-crate-metadata.json` of a full ARC. It also reads the file of a Workflow RO-Crate (one ARC workflow) and of a Workflow Run Crate (one ARC run), as ARCtrl writes them with `writeWorkflowAsCrate` and `writeRunAsCrate`. The DataPLANT endpoint-submission service uploads this format to WorkflowHub. Pass the file through the ROC-JSON loader (see [Entry points and configuration](#entry-points-and-configuration)), use "Upload ROC-JSON" in the demo, or open the demo with the crate named in its address (see [Showcase URL parameters](#showcase-url-parameters)).
 
 No prop or option selects the kind. The viewer detects it from the crate. The Workflow Run Crate profile on the root dataset marks a run crate, and the Workflow RO-Crate profile on the metadata descriptor or the root dataset marks a workflow crate. The viewer reads every other file as a full ARC, as before.
 
-The viewer reads JSON only. Crates downloaded from WorkflowHub are zip files, so extract `ro-crate-metadata.json` from the zip and pass or upload that file.
+The viewer reads JSON only. Crates downloaded from WorkflowHub are zip files, so extract `ro-crate-metadata.json` from the zip and pass or upload that file. A public WorkflowHub entry can also be opened with the `workflowhub` URL parameter, which loads the JSON without the zip.
 
 A crate opens on its run or workflow folder (`runs/<id>` or `workflows/<id>`). A run crate also shows its process tables and the provenance graph. A workflow crate has no provenance graph.
 
@@ -72,7 +72,7 @@ flowchart TD
     Bridge -- Yes --> Plugin["Plugin mode: use bridge only"]
     Bridge -- No --> Props{"Any supported prop is not undefined?"}
     Props -- Yes --> Component["Component mode: use props"]
-    Props -- No --> Showcase["Showcase mode: use defaults"]
+    Props -- No --> Showcase["Showcase mode: loader from the URL parameters, defaults otherwise"]
     Plugin --> Defaults["Apply defaults for omitted options"]
     Component --> Defaults
     Showcase --> Defaults
@@ -85,13 +85,13 @@ flowchart TD
 | --- | --- | --- |
 | 1 | Embedded in an iframe by the Invenio plugin | `window.arcwebview`, including an empty `{}` |
 | 2 | Used as a component in another React application | Supported component props, when the bridge is absent |
-| 3 | GitHub Pages showcase | Defaults, when neither a bridge nor supported prop values are supplied |
+| 3 | GitHub Pages showcase | Defaults and a JSON loader from the `url` or `workflowhub` query parameter, when neither a bridge nor supported prop values are supplied |
 
 The bridge is an explicit convention for plugin mode. It takes precedence over **all** component props. Missing bridge fields use defaults, without falling back to props. An absent or `null` bridge allows component mode. React passes a props object even for `<WebViewer />`, so the resolver checks supported values against `undefined`; `showUnloadButton: false` selects component mode and hides the unload button. Supplying only `layout` also selects component mode, including an empty `{}`. Unrelated props do not affect the decision.
 
 | Option | Bridge field | React prop | Default |
 | --- | --- | --- | --- |
-| Asynchronous ROC-JSON loader | `getROCJson` | `jsonString` | No loader |
+| Asynchronous ROC-JSON loader | `getROCJson` | `jsonString` | No loader; in showcase mode, one from the [URL parameters](#showcase-url-parameters) |
 | Asynchronous README loader | `readmefetch` | `readmefetch` | No README |
 | Asynchronous license loader | `licensefetch` | `licensefetch` | No license |
 | Show unload button | `showUnloadButton` | `showUnloadButton` | `true` |
@@ -135,6 +135,30 @@ Integration considerations:
 - Bridge mutation is not reactive. For later configuration changes, use React props in component mode, or remount the plugin viewer after updating its bridge. Keep loader references stable to avoid unnecessary reloads.
 - Every viewer in the same window shares the bridge. Use props in a window without a bridge for independently configured React instances.
 - The resolver guards access to `window`, allowing configuration resolution during server rendering. Data loading starts after the component mounts in the browser.
+
+### Showcase URL parameters
+
+The showcase (`https://nfdi4plants.github.io/ARCWebView/`) can open a crate named in its address. There are two parameters.
+
+#### Any crate URL
+
+```
+https://nfdi4plants.github.io/ARCWebView/?url=<percent-encoded URL of a ro-crate-metadata.json>
+```
+
+The viewer fetches the URL as it is and shows the crate. The URL must be absolute and use http or https. The browser fetches it from the viewer's page, so the server has to allow cross-origin reads (`Access-Control-Allow-Origin`); otherwise the viewer shows an error. Any service can link to the viewer this way.
+
+#### A WorkflowHub entry
+
+```
+https://nfdi4plants.github.io/ARCWebView/?workflowhub=2380
+```
+
+`workflowhub` is the numeric entry id. `host` is optional and can be `workflowhub.eu` (default) or `dev.workflowhub.eu`; any other value is an error and nothing is fetched. WorkflowHub's own pages do not allow cross-origin reads, but its GA4GH TRS API does. Every TRS crate URL names a version, so the viewer first reads the version list from `/ga4gh/trs/v2/tools/<id>/versions`, takes the highest numeric version id, and then loads `/ga4gh/trs/v2/tools/<id>/versions/<n>/PLAIN_CWL/descriptor/ro-crate-metadata.json` through the same loader as `url`. The link therefore always opens the latest version. A `url` link to that TRS address opens one fixed version.
+
+Only public entries work. A private or unknown entry returns 404, and the viewer says the entry was not found or is not public.
+
+Use one of the two parameters; both together is an error. The resolver reads them only in showcase mode, so a bridge or any supported component prop makes the viewer ignore the query string. `App` resolves the configuration again only when a supported prop changes, so the loader built from the query string keeps its identity and runs once per page load.
 
 ## Requirements
 

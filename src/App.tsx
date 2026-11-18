@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback, lazy, Suspense } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 const WebViewer = lazy(() => import('./components/WebViewer'));
 import { Blankslate } from '@primer/react/experimental'
 import { FileCacheProvider, SearchCacheProvider } from './ContextProvider';
@@ -7,6 +7,7 @@ import { Button, Spinner, Stack, Banner } from '@primer/react'
 import { UploadIcon, SearchIcon } from '@primer/octicons-react'
 import { resolveViewerConfig } from './config';
 import type { WebViewerProps } from './config';
+import { LoadError } from './util/urlLoader';
 
 function ErrorBanner({ error, clearError }: { error: string, clearError: () => void }) {
     return (
@@ -84,7 +85,15 @@ function SkeletonTable() {
 }
 
 function App(props: WebViewerProps) {
-    const { loadJson, readmefetch, licensefetch, showUnloadButton, layout } = resolveViewerConfig(props);
+    // The configuration is resolved again only when a supported prop changes. A showcase loader built
+    // from the query string therefore keeps its identity across renders, and the effect below runs once.
+    const { jsonString: jsonProp, readmefetch: readmeProp, licensefetch: licenseProp, showUnloadButton: unloadProp, layout: layoutProp } = props;
+    const { loadJson, readmefetch, licensefetch, showUnloadButton, layout } = useMemo(
+        () => resolveViewerConfig({
+            jsonString: jsonProp, readmefetch: readmeProp, licensefetch: licenseProp, showUnloadButton: unloadProp, layout: layoutProp,
+        }),
+        [jsonProp, readmeProp, licenseProp, unloadProp, layoutProp],
+    );
 
     const [jsonString, setJsonString] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(loadJson !== undefined);
@@ -107,7 +116,7 @@ function App(props: WebViewerProps) {
             } catch (err) {
                 if (active) {
                     console.error('Error fetching JSON:', err);
-                    setError('Failed to load JSON data.');
+                    setError(err instanceof LoadError ? err.message : 'Failed to load JSON data.');
                 }
             } finally {
                 if (active) setLoading(false);

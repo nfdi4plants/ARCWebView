@@ -1,16 +1,8 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
-import ts from 'typescript';
+import { importTs } from './importTs.mjs';
 
-// Use the installed compiler so these tests also work on Node 20 without a TS runner.
-const source = await readFile(new URL('../src/config.ts', import.meta.url), 'utf8');
-const { outputText } = ts.transpileModule(source, {
-    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-});
-const { resolveViewerConfig } = await import(
-    `data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`
-);
+const { resolveViewerConfig } = await importTs('../src/config.ts');
 
 test('no browser window and no supplied options selects showcase defaults', () => {
     assert.equal(typeof window, 'undefined');
@@ -164,4 +156,79 @@ test('the default bridge comes from the current window and null is absent', () =
     } finally {
         delete globalThis.window;
     }
+});
+
+const withWindow = (value, fn) => {
+    try {
+        globalThis.window = value;
+        return fn();
+    } finally {
+        delete globalThis.window;
+    }
+};
+
+// Runs fn with a replaced global fetch and restores the original afterwards.
+async function withFetch(fetchFn, fn) {
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = fetchFn;
+    try {
+        return await fn();
+    } finally {
+        globalThis.fetch = realFetch;
+    }
+}
+
+// Fails every fetch and counts the attempts, for loaders that must not reach the network.
+const refuseFetch = () => {
+    const calls = [];
+    return { calls, fn: async (url) => { calls.push(url); throw new Error('must not fetch'); } };
+};
+
+test('showcase mode loads the crate named by the url or workflowhub parameter', async () => {
+    const crateUrl = 'https://example.org/crates/run/ro-crate-metadata.json?ref=main';
+    const urlConfig = resolveViewerConfig({}, undefined, `?url=${encodeURIComponent(crateUrl)}`);
+    const fetched = [];
+    const json = await withFetch(async (url) => { fetched.push(url); return new Response('{"@graph":[1]}'); }, () => urlConfig.loadJson());
+    assert.equal(json, '{"@graph":[1]}');
+    assert.deepEqual(fetched, [crateUrl]);
+
+    const hubConfig = resolveViewerConfig({}, undefined, '?workflowhub=2380');
+    const hubJson = await withFetch(async (url) => new Response(url.endsWith('/versions') ? '[{"id":"1"}]' : '{"@graph":[2]}'), () => hubConfig.loadJson());
+    assert.equal(hubJson, '{"@graph":[2]}');
+});
+
+test('a bridge or supported props make the viewer ignore the query string', async () => {
+    const refuse = refuseFetch();
+    await withFetch(refuse.fn, async () => {
+        for (const search of ['?workflowhub=2380', '?url=https%3A%2F%2Fexample.org%2Fa.json']) {
+            const plugin = resolveViewerConfig({}, { getROCJson: async () => 'bridge JSON' }, search);
+            assert.equal(await plugin.loadJson(), 'bridge JSON');
+            assert.equal(resolveViewerConfig({}, {}, search).loadJson, undefined);
+
+            const withProp = resolveViewerConfig({ jsonString: async () => 'prop JSON' }, undefined, search);
+            assert.equal(await withProp.loadJson(), 'prop JSON');
+            assert.equal(resolveViewerConfig({ showUnloadButton: false }, undefined, search).loadJson, undefined);
+        }
+    });
+    assert.deepEqual(refuse.calls, []);
+});
+
+test('the query string is read from window.location', () => {
+    withWindow({ location: { search: '?workflowhub=7' } }, () => assert.equal(typeof resolveViewerConfig({}).loadJson, 'function'));
+    withWindow({}, () => assert.equal(resolveViewerConfig({}).loadJson, undefined));
+});
+
+test('a foreign host, a non-http url or both parameters at once are refused without fetching', async () => {
+    const refuse = refuseFetch();
+    await withFetch(refuse.fn, async () => {
+        for (const search of [
+            '?workflowhub=1&host=evil.example',
+            '?url=javascript%3Aalert(1)',
+            '?url=file%3A%2F%2F%2Fetc%2Fpasswd',
+            '?url=https%3A%2F%2Fexample.org%2Fa.json&workflowhub=1',
+        ]) {
+            await assert.rejects(resolveViewerConfig({}, undefined, search).loadJson);
+        }
+    });
+    assert.deepEqual(refuse.calls, []);
 });
