@@ -47,7 +47,7 @@ export default function ProvenanceGraph({
     const current = nav ?? ownNav;
 
     if (provenance === undefined) {
-        return <p className="color-fg-muted">This crate has no provenance graph.</p>;
+        return <p className="fgColor-muted">This crate has no provenance graph.</p>;
     }
     if (provenance.error !== undefined) {
         return (

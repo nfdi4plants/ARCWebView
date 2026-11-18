@@ -350,7 +350,7 @@ function Browser({
                 </Stack>
             </div>
             {currentTreeNode === null ? (
-                <p className="color-fg-muted" role="status">
+                <p className="fgColor-muted" role="status">
                     {current.path} is not part of this crate.
                 </p>
             ) : currentTreeNode.type === "file" ? (
