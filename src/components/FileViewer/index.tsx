@@ -1,12 +1,9 @@
-import type { ContentType, FileTypes, FileViewerContent } from "../../util/types";
+import type { FileTypes, FileViewerContent } from "../../util/types";
 import {SkeletonText, UnderlinePanels} from '@primer/react/experimental'
 import { useCachedFiles } from "../../hooks/useCachedFiles";
-import {lazy, Suspense} from "react";
-const MarkdownRender = lazy(() => import("../MarkdownRender"));
 
 interface FileViewerContentProps {
   file: FileTypes;
-  contentType: ContentType;
 }
 
 interface FileViewerProps {
@@ -18,15 +15,11 @@ interface FileViewerProps {
   onSelectTab?: (name: string | undefined) => void
 }
 
-function FileViewerContent({ file, contentType }: FileViewerContentProps) {
+function FileViewerContent({ file }: FileViewerContentProps) {
   return (
     <div>
       {/* {file && (typeof file === "jsx") && file} */}
-      {file && (typeof file === "string") &&
-        contentType === "markdown" 
-          ? <Suspense fallback={<SkeletonText lines={10} />}><MarkdownRender content={file as string} /></Suspense>
-          : <div>{file as string}</div>
-      }
+      {(typeof file === "string") && <div>{file}</div>}
       {(file instanceof File) &&
         <div>
           <strong>File:</strong> {file.name} ({file.type}, {file.size} bytes)
@@ -82,10 +75,7 @@ export default function FileViewer ({nodes, initialTable, onSelectTab}: FileView
                   ? <div className="text-danger">Error loading file: {errors[node.node.id].message}</div>
                   : node.component
                   ? node.component
-                  : <FileViewerContent
-                    file={files[node.node.id]}
-                    contentType={node.contentType || "text"}
-                  />
+                  : <FileViewerContent file={files[node.node.id]} />
               }
             </UnderlinePanels.Panel>
           ))}

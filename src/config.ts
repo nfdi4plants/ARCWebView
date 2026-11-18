@@ -8,8 +8,6 @@ export interface LayoutOptions {
 }
 
 interface ViewerOptions {
-    readmefetch?: TextLoader;
-    licensefetch?: TextLoader;
     showUnloadButton?: boolean;
     layout?: LayoutOptions;
 }
@@ -67,8 +65,6 @@ export function resolveViewerConfig(
 ): ViewerConfig {
     const hasProps = [
         props.jsonString,
-        props.readmefetch,
-        props.licensefetch,
         props.showUnloadButton,
         props.layout
     ].some(value => value !== undefined);
@@ -81,8 +77,6 @@ export function resolveViewerConfig(
         loadJson: bridge != null
             ? bridge.getROCJson
             : entryPoint === 'showcase' ? queryLoader(search) : props.jsonString,
-        readmefetch: options.readmefetch,
-        licensefetch: options.licensefetch,
         showUnloadButton: options.showUnloadButton ?? true,
         layout: options.layout ?? { sidebarOpen: false, provenancesOpen: true }
     };

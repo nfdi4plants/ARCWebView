@@ -616,8 +616,6 @@ function viewerTargetTitle(target: ViewerTarget, arcTitle: string | undefined): 
 
 interface WebViewerProps {
     jsonString: string;
-    readmefetch?: () => Promise<string>;
-    licensefetch?: () => Promise<string>;
     clearJsonCallback?: () => void;
     layout?: LayoutOptions;
 }
@@ -648,8 +646,6 @@ interface ARCExportMetadata {
 
 export default function WebViewer({
     jsonString,
-    readmefetch,
-    licensefetch,
     clearJsonCallback,
     layout 
 }: WebViewerProps) {
@@ -1011,36 +1007,6 @@ export default function WebViewer({
                                 navigateTo={navigateTo}
                             />
                         )}
-                        {tree.value &&
-                            currentTreeNode &&
-                            currentTreeNode.name === "root" &&
-                            currentTreeNode.type === "folder" &&
-                            (readmefetch || licensefetch) && (
-                                <FileViewer
-                                    nodes={[
-                                        {
-                                            node: {
-                                                id: currentTreeNode.name + "readme",
-                                                name: "README.md",
-                                                type: "file",
-                                            },
-                                            contentType: "markdown",
-                                            content: readmefetch,
-                                        },
-                                        {
-                                            node: {
-                                                id:
-                                                    currentTreeNode.name +
-                                                    "license",
-                                                name: "LICENSE.md",
-                                                type: "file",
-                                            },
-                                            contentType: "markdown",
-                                            content: licensefetch,
-                                        },
-                                    ]}
-                                />
-                            )}
                         {arc.value && !isWorkflowCrate && (
                             <section
                                 ref={provenanceRef}

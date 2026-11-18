@@ -27,8 +27,6 @@ export default defineConfig({
         "@primer/react",
         "elkjs",
         /^elkjs\//,
-        "marked",
-        "mermaid",
         /^react($|\/)/,
         /^react-dom($|\/)/,
         "styled-components"

@@ -10,7 +10,7 @@ export type TreeNode = {
 
 export type FileTypes = File | Blob | string;
 
-export type ContentType = "text" | "markdown" | "binary" | "jsx";
+export type ContentType = "text" | "binary" | "jsx";
 
 export type FileViewerContent = {
   node: TreeNode;

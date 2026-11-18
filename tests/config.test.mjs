@@ -9,8 +9,6 @@ test('no browser window and no supplied options selects showcase defaults', () =
     assert.deepEqual(resolveViewerConfig({}), {
         entryPoint: 'showcase',
         loadJson: undefined,
-        readmefetch: undefined,
-        licensefetch: undefined,
         showUnloadButton: true,
         layout: { sidebarOpen: false, provenancesOpen: true },
     });
@@ -19,8 +17,6 @@ test('no browser window and no supplied options selects showcase defaults', () =
 test('undefined supported values and unrelated props do not select component mode', () => {
     assert.equal(resolveViewerConfig({
         jsonString: undefined,
-        readmefetch: undefined,
-        licensefetch: undefined,
         showUnloadButton: undefined,
         layout: undefined,
         children: 'unrelated',
@@ -30,8 +26,6 @@ test('undefined supported values and unrelated props do not select component mod
 test('each supplied supported prop selects component mode, including false', () => {
     for (const props of [
         { jsonString: async () => '{}' },
-        { readmefetch: async () => '# README' },
-        { licensefetch: async () => 'MIT' },
         { showUnloadButton: false },
         { layout: {} },
         { layout: { sidebarOpen: false, provenancesOpen: false } },
@@ -41,15 +35,11 @@ test('each supplied supported prop selects component mode, including false', () 
     assert.equal(resolveViewerConfig({ showUnloadButton: false }).showUnloadButton, false);
 });
 
-test('component mode uses its supplied loaders and default unload visibility', async () => {
+test('component mode uses its supplied loader and default unload visibility', async () => {
     const config = resolveViewerConfig({
         jsonString: async () => 'component JSON',
-        readmefetch: async () => 'component README',
-        licensefetch: async () => 'component license',
     });
     assert.equal(await config.loadJson(), 'component JSON');
-    assert.equal(await config.readmefetch(), 'component README');
-    assert.equal(await config.licensefetch(), 'component license');
     assert.equal(config.showUnloadButton, true);
 });
 
@@ -96,13 +86,9 @@ test('plugin mode overrides every prop and never calls the prop JSON loader', as
     let bridgeCalls = 0;
     const config = resolveViewerConfig({
         jsonString: async () => { propCalls++; return 'prop JSON'; },
-        readmefetch: async () => 'prop README',
-        licensefetch: async () => 'prop license',
         showUnloadButton: true,
     }, {
         getROCJson: async () => { bridgeCalls++; return 'bridge JSON'; },
-        readmefetch: async () => 'bridge README',
-        licensefetch: async () => 'bridge license',
         showUnloadButton: false,
     });
 
@@ -111,8 +97,6 @@ test('plugin mode overrides every prop and never calls the prop JSON loader', as
     assert.equal(bridgeCalls, 0);
     assert.equal(propCalls, 0);
     assert.equal(await config.loadJson(), 'bridge JSON');
-    assert.equal(await config.readmefetch(), 'bridge README');
-    assert.equal(await config.licensefetch(), 'bridge license');
     assert.equal(bridgeCalls, 1);
     assert.equal(propCalls, 0);
 });
@@ -120,14 +104,10 @@ test('plugin mode overrides every prop and never calls the prop JSON loader', as
 test('an empty bridge selects plugin mode and defaults without leaking props', () => {
     assert.deepEqual(resolveViewerConfig({
         jsonString: async () => 'prop JSON',
-        readmefetch: async () => 'prop README',
-        licensefetch: async () => 'prop license',
         showUnloadButton: false,
     }, {}), {
         entryPoint: 'plugin',
         loadJson: undefined,
-        readmefetch: undefined,
-        licensefetch: undefined,
         showUnloadButton: true,
         layout: { sidebarOpen: false, provenancesOpen: true },
     });

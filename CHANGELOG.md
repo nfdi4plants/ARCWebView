@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Changed the ARCtrl dependency to ^3.3.1.
 
+### 🔥 Removed
+
+- Removed the README and license panel of the root folder, together with the `readmefetch` and `licensefetch` options and the `marked` and `mermaid` dependencies.
+
 ## 2.0.0 - 2026-10-23
 
 ### ✨ Added

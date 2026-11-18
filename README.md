@@ -92,13 +92,11 @@ The bridge is an explicit convention for plugin mode. It takes precedence over *
 | Option | Bridge field | React prop | Default |
 | --- | --- | --- | --- |
 | Asynchronous ROC-JSON loader | `getROCJson` | `jsonString` | No loader; in showcase mode, one from the [URL parameters](#showcase-url-parameters) |
-| Asynchronous README loader | `readmefetch` | `readmefetch` | No README |
-| Asynchronous license loader | `licensefetch` | `licensefetch` | No license |
 | Show unload button | `showUnloadButton` | `showUnloadButton` | `true` |
 | Initially open file sidebar | `layout.sidebarOpen` | `layout.sidebarOpen` | `false` |
 | Initially expand provenance graph | `layout.provenancesOpen` | `layout.provenancesOpen` | `true` |
 
-All loaders return `Promise<string>`. The optional bridge and its settings share one TypeScript declaration in `src/config.ts`; `ArcWebViewBridge`, `WebViewerProps`, and `LayoutOptions` are exported from the npm library. Boolean defaults use [nullish coalescing (`??`)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing), preserving explicit `false`.
+The loader returns `Promise<string>`. The optional bridge and its settings share one TypeScript declaration in `src/config.ts`; `ArcWebViewBridge`, `WebViewerProps`, and `LayoutOptions` are exported from the npm library. Boolean defaults use [nullish coalescing (`??`)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing), preserving explicit `false`.
 
 For example, with a `loadArcJson` callback supplied by the integration:
 
