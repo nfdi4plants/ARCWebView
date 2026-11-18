@@ -118,27 +118,41 @@ function Viewer({
         [crate, fileLocation]
     );
 
+    // The tree navigates the open tab. In the file browser it opens the path. In the graph it leads to the
+    // place that belongs to the path, and an item the graph has no place for cannot be selected.
+    const onGraphTab = tab === "provenance";
     const selectInTree = useCallback(
         (path: string) => {
-            // The file that is already open keeps its tab.
-            setFileLocation((current) => (current.path === path ? current : { path }));
-            setTab("files");
+            if (onGraphTab) {
+                const target = locationToNavigation(crate, { path });
+                if (target) setGraphNav(target);
+            } else {
+                // The file that is already open keeps its tab.
+                setFileLocation((current) => (current.path === path ? current : { path }));
+            }
             if (isSmallScreen) {
                 setSidebarActive(false);
             }
         },
-        [isSmallScreen]
+        [crate, onGraphTab, isSmallScreen]
     );
+    const selectableInGraph = useCallback(
+        (path: string) => locationToNavigation(crate, { path }) !== undefined,
+        [crate]
+    );
+    // In the graph the tree marks the file or folder that belongs to the current place.
+    const treePath = onGraphTab ? viewerTarget?.path : fileLocation.path;
 
     const renderedTree = useMemo(
         () => (
             <FileTree
                 crate={crate}
-                currentPath={fileLocation.path}
+                currentPath={treePath}
                 onSelect={selectInTree}
+                isSelectable={onGraphTab ? selectableInGraph : undefined}
             />
         ),
-        [crate, fileLocation.path, selectInTree]
+        [crate, treePath, selectInTree, onGraphTab, selectableInGraph]
     );
 
     const sidebarToggle = (
