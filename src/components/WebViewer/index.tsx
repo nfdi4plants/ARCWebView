@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import FileBrowser from "../FileBrowser";
 import FileTree from "../FileTree";
 import ProvenanceGraph from "../ProvenanceGraph";
@@ -16,17 +16,16 @@ import {
 import { START_NAVIGATION, type Navigation } from "../../provenance/navigation";
 import {
     SplitPageLayout,
-    Stack,
     Button,
     IconButton,
     useResponsiveValue,
     Dialog,
     Banner,
-    Heading
 } from "@primer/react";
+import { UnderlinePanels } from "@primer/react/experimental";
 import Icons from "../Icons";
-import { ChevronDownIcon, ChevronUpIcon, XCircleIcon } from "@primer/octicons-react";
-import { type LayoutOptions } from "../../config";
+import { XCircleIcon } from "@primer/octicons-react";
+import { type LayoutOptions, type ViewerTab } from "../../config";
 
 interface SideSheetProps {
     close: () => void;
@@ -50,6 +49,9 @@ function viewerTargetTitle(target: FileLocation, arcTitle: string | undefined): 
         : `Open ${place}, table ${target.table}`;
 }
 
+// The graph fills the window below the tab row, and stays usable in a short window.
+const GRAPH_HEIGHT = "max(420px, calc(100vh - 8rem))";
+
 interface ViewerOptions {
     clearJsonCallback?: () => void;
     layout?: LayoutOptions;
@@ -64,6 +66,9 @@ function Viewer({
     clearJsonCallback,
     layout,
 }: ViewerOptions & { crate: Crate }) {
+    // A workflow crate has no provenance graph, so it shows the files without tabs.
+    const hasGraph = crate.kind !== "workflow";
+
     const [sidebarActive, setSidebarActive] = useState(layout?.sidebarOpen ?? false);
 
     const isSmallScreen = useResponsiveValue(
@@ -75,15 +80,33 @@ function Viewer({
         false
     );
 
-    // The file browser and the graph each have their place, and the viewer holds both, so one can lead to
-    // the other.
+    // The file browser and the graph each keep their own place. Opening the other tab moves neither.
     const [fileLocation, setFileLocation] = useState<FileLocation>(() => landingLocation(crate));
     const [graphNav, setGraphNav] = useState<Navigation>(START_NAVIGATION);
 
-    const viewerRef = useRef<HTMLDivElement>(null);
-    const provenanceRef = useRef<HTMLElement>(null);
-    const provenanceHeadingRef = useRef<HTMLHeadingElement>(null);
-    const [graphVisible, setGraphVisible] = useState(layout?.provenancesOpen ?? true);
+    const [tab, setTab] = useState<ViewerTab>(
+        hasGraph && layout?.initialTab === "provenance" ? "provenance" : "files"
+    );
+    // The graph mounts when its tab opens for the first time, and then stays mounted with its zoom,
+    // expanded edges and scroll position.
+    const [graphOpened, setGraphOpened] = useState(tab === "provenance");
+    const openTab = (next: ViewerTab) => {
+        setTab(next);
+        if (next === "provenance") setGraphOpened(true);
+    };
+
+    // A button that leads to the other tab disappears with its own tab, so the tab it opens takes the focus.
+    const tabsId = useId();
+    const tabToFocus = useRef<ViewerTab | null>(null);
+    useEffect(() => {
+        if (tabToFocus.current !== tab) return;
+        tabToFocus.current = null;
+        document.getElementById(`${tabsId}-tab-${tab}`)?.focus();
+    }, [tab, tabsId]);
+    const leadTo = (next: ViewerTab) => {
+        tabToFocus.current = next;
+        openTab(next);
+    };
 
     // Where the "Show in file viewer" button leads, and where the "Show in provenance graph" button leads.
     const viewerTarget = useMemo(
@@ -99,28 +122,13 @@ function Viewer({
         (path: string) => {
             // The file that is already open keeps its tab.
             setFileLocation((current) => (current.path === path ? current : { path }));
+            setTab("files");
             if (isSmallScreen) {
                 setSidebarActive(false);
             }
         },
         [isSmallScreen]
     );
-
-    const openInViewer = (target: FileLocation) => {
-        setFileLocation(target);
-        if (isSmallScreen) {
-            setSidebarActive(false);
-        }
-        viewerRef.current?.scrollIntoView({ block: "start" });
-        viewerRef.current?.focus({ preventScroll: true });
-    };
-
-    const showInGraph = (target: Navigation) => {
-        setGraphNav(target);
-        setGraphVisible(true);
-        provenanceRef.current?.scrollIntoView({ block: "start" });
-        provenanceHeadingRef.current?.focus({ preventScroll: true });
-    };
 
     const renderedTree = useMemo(
         () => (
@@ -133,130 +141,140 @@ function Viewer({
         [crate, fileLocation.path, selectInTree]
     );
 
+    const sidebarToggle = (
+        <IconButton
+            aria-label="Expand sidebar"
+            variant="invisible"
+            icon={
+                sidebarActive
+                    ? Icons.SidebarCollapseIcon
+                    : Icons.SidebarExpandIcon
+            }
+            onClick={() => setSidebarActive(!sidebarActive)}
+        />
+    );
+
+    const unloadButton = clearJsonCallback && (
+        <IconButton
+            style={{ marginLeft: "auto" }}
+            aria-label="Clear loaded JSON and upload new"
+            variant="danger"
+            icon={XCircleIcon}
+            onClick={() => clearJsonCallback()}
+        />
+    );
+
+    const fileBrowser = (
+        <FileBrowser
+            crate={crate}
+            location={fileLocation}
+            onLocationChange={setFileLocation}
+            // Without tabs the header of the file browser is the only toolbar.
+            headerStart={hasGraph ? undefined : sidebarToggle}
+            headerActions={
+                hasGraph
+                    ? graphTarget && (
+                          <Button
+                              size="small"
+                              onClick={() => {
+                                  setGraphNav(graphTarget);
+                                  leadTo("provenance");
+                              }}
+                          >
+                              Show in provenance graph
+                          </Button>
+                      )
+                    : unloadButton
+            }
+        />
+    );
+
     return (
-        <div
-            ref={viewerRef}
-            role="region"
-            aria-label="File viewer"
-            tabIndex={-1}
-        >
-            <SplitPageLayout>
-                {/* <SplitPageLayout.Header >
+        <SplitPageLayout>
+            {/* <SplitPageLayout.Header >
             </SplitPageLayout.Header> */}
-                <div className="z-2">
-                    {sidebarActive && (isSmallScreen as boolean) && (
-                        <SideSheet close={() => setSidebarActive(false)}>
-                            {renderedTree}
-                        </SideSheet>
-                    )}
-                </div>
-                <SplitPageLayout.Pane
-                    aria-label="Sidebar"
-                    resizable={true}
-                    widthStorageKey={"arc-webviewer-sidebar-width"}
-                    hidden={!sidebarActive || (isSmallScreen as boolean)}
-                    sticky={true}
-                >
-                    {renderedTree}
-                </SplitPageLayout.Pane>
-                <SplitPageLayout.Content>
-                    <Stack>
-                        <FileBrowser
-                            crate={crate}
-                            location={fileLocation}
-                            onLocationChange={setFileLocation}
-                            headerStart={
-                                <IconButton
-                                    aria-label="Expand sidebar"
-                                    variant="invisible"
-                                    icon={
-                                        sidebarActive
-                                            ? Icons.SidebarCollapseIcon
-                                            : Icons.SidebarExpandIcon
-                                    }
-                                    onClick={() =>
-                                        setSidebarActive(!sidebarActive)
-                                    }
-                                />
-                            }
-                            headerActions={
-                                <>
-                                    {graphTarget && (
-                                        <Button
-                                            size="small"
-                                            onClick={() => showInGraph(graphTarget)}
-                                        >
-                                            Show in provenance graph
-                                        </Button>
-                                    )}
-                                    {clearJsonCallback && (
-                                        <IconButton
-                                            style={{ marginLeft: "auto" }}
-                                            aria-label="Clear loaded JSON and upload new"
-                                            variant="danger"
-                                            icon={XCircleIcon}
-                                            onClick={() => clearJsonCallback()}
-                                        />
-                                    )}
-                                </>
-                            }
-                        />
-                        {crate.kind !== "workflow" && (
-                            <section
-                                ref={provenanceRef}
-                                aria-labelledby="provenance-graph-heading"
-                                className="mt-4 pb-4"
-                            >
-                                <div className="d-flex flex-items-center mb-2" style={{ gap: "0.5rem" }}>
-                                    <Heading
-                                        ref={provenanceHeadingRef}
-                                        as="h2"
-                                        variant="medium"
-                                        id="provenance-graph-heading"
-                                        tabIndex={-1}
-                                    >
-                                        Provenance graph
-                                    </Heading>
-                                    <Button
-                                        size="small"
-                                        variant="invisible"
-                                        leadingVisual={graphVisible ? ChevronUpIcon : ChevronDownIcon}
-                                        aria-expanded={graphVisible}
-                                        aria-controls="provenance-graph-body"
-                                        onClick={() => setGraphVisible(!graphVisible)}
-                                    >
-                                        {graphVisible ? "Hide" : "Show"}
-                                    </Button>
-                                </div>
-                                {graphVisible && (
-                                    <div id="provenance-graph-body">
-                                        <ProvenanceGraph
-                                            crate={crate}
-                                            nav={graphNav}
-                                            onNavChange={setGraphNav}
-                                            actions={
-                                                viewerTarget ? (
-                                                    <Button
-                                                        size="small"
-                                                        title={viewerTargetTitle(
-                                                            viewerTarget,
-                                                            crateArc(crate).Title
-                                                        )}
-                                                        onClick={() => openInViewer(viewerTarget)}
-                                                    >
-                                                        Show in file viewer
-                                                    </Button>
-                                                ) : undefined
-                                            }
-                                        />
-                                    </div>
-                                )}
-                            </section>
+            <div className="z-2">
+                {sidebarActive && (isSmallScreen as boolean) && (
+                    <SideSheet close={() => setSidebarActive(false)}>
+                        {renderedTree}
+                    </SideSheet>
+                )}
+            </div>
+            <SplitPageLayout.Pane
+                aria-label="Sidebar"
+                resizable={true}
+                widthStorageKey={"arc-webviewer-sidebar-width"}
+                hidden={!sidebarActive || (isSmallScreen as boolean)}
+                sticky={true}
+            >
+                {renderedTree}
+            </SplitPageLayout.Pane>
+            <SplitPageLayout.Content>
+                {hasGraph ? (
+                    // Primer renders the tab row and the panels as siblings, and it drops every other child. The
+                    // buttons therefore sit next to the tabs as cells of this grid: the first row holds the
+                    // sidebar toggle, the tabs and the unload button, and each panel spans the row below.
+                    <div
+                        style={{
+                            display: "grid",
+                            gridTemplateColumns: "auto minmax(0, 1fr) auto",
+                            columnGap: "0.5rem",
+                            alignItems: "center",
+                        }}
+                    >
+                        <div style={{ gridColumn: 1, gridRow: 1 }}>{sidebarToggle}</div>
+                        {unloadButton && (
+                            <div style={{ gridColumn: 3, gridRow: 1 }}>{unloadButton}</div>
                         )}
-                    </Stack>
-                </SplitPageLayout.Content>
-            </SplitPageLayout>
-        </div>
+                        <UnderlinePanels
+                            id={tabsId}
+                            aria-label="Views of the ARC"
+                            value={tab}
+                            onChange={({ value }) => openTab(value as ViewerTab)}
+                        >
+                            <UnderlinePanels.Tab value="files">Files</UnderlinePanels.Tab>
+                            <UnderlinePanels.Tab value="provenance">Provenance graph</UnderlinePanels.Tab>
+                            <UnderlinePanels.Panel value="files" style={{ gridColumn: "1 / -1" }}>
+                                {fileBrowser}
+                            </UnderlinePanels.Panel>
+                            <UnderlinePanels.Panel
+                                value="provenance"
+                                className="pt-3"
+                                style={{ gridColumn: "1 / -1" }}
+                            >
+                                {graphOpened && (
+                                    <ProvenanceGraph
+                                        crate={crate}
+                                        nav={graphNav}
+                                        onNavChange={setGraphNav}
+                                        height={GRAPH_HEIGHT}
+                                        actions={
+                                            viewerTarget ? (
+                                                <Button
+                                                    size="small"
+                                                    title={viewerTargetTitle(
+                                                        viewerTarget,
+                                                        crateArc(crate).Title
+                                                    )}
+                                                    onClick={() => {
+                                                        setFileLocation(viewerTarget);
+                                                        leadTo("files");
+                                                    }}
+                                                >
+                                                    Show in file viewer
+                                                </Button>
+                                            ) : undefined
+                                        }
+                                    />
+                                )}
+                            </UnderlinePanels.Panel>
+                        </UnderlinePanels>
+                    </div>
+                ) : (
+                    fileBrowser
+                )}
+            </SplitPageLayout.Content>
+        </SplitPageLayout>
     );
 }
 

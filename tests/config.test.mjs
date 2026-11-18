@@ -10,7 +10,7 @@ test('no browser window and no supplied options selects showcase defaults', () =
         entryPoint: 'showcase',
         loadJson: undefined,
         showUnloadButton: true,
-        layout: { sidebarOpen: false, provenancesOpen: true },
+        layout: { sidebarOpen: false, initialTab: 'files' },
     });
 });
 
@@ -28,7 +28,7 @@ test('each supplied supported prop selects component mode, including false', () 
         { jsonString: async () => '{}' },
         { showUnloadButton: false },
         { layout: {} },
-        { layout: { sidebarOpen: false, provenancesOpen: false } },
+        { layout: { sidebarOpen: false, initialTab: 'provenance' } },
     ]) {
         assert.equal(resolveViewerConfig(props).entryPoint, 'component');
     }
@@ -55,11 +55,12 @@ test('unload visibility honors the selected source for both boolean values', () 
     }
 });
 
-test('layout honors both boolean values from the selected source', () => {
+test('layout honors every sidebar and tab value from the selected source', () => {
+    const otherTab = { files: 'provenance', provenance: 'files' };
     for (const sidebarOpen of [false, true]) {
-        for (const provenancesOpen of [false, true]) {
-            const layout = { sidebarOpen, provenancesOpen };
-            const opposite = { sidebarOpen: !sidebarOpen, provenancesOpen: !provenancesOpen };
+        for (const initialTab of ['files', 'provenance']) {
+            const layout = { sidebarOpen, initialTab };
+            const opposite = { sidebarOpen: !sidebarOpen, initialTab: otherTab[initialTab] };
             assert.deepEqual(resolveViewerConfig({ layout }).layout, layout);
             assert.deepEqual(resolveViewerConfig({ layout: opposite }, { layout }).layout, layout);
         }
@@ -68,15 +69,15 @@ test('layout honors both boolean values from the selected source', () => {
 
 test('an omitted bridge layout uses defaults without falling back to component props', () => {
     assert.deepEqual(resolveViewerConfig({
-        layout: { sidebarOpen: true, provenancesOpen: false },
-    }, {}).layout, { sidebarOpen: false, provenancesOpen: true });
+        layout: { sidebarOpen: true, initialTab: 'provenance' },
+    }, {}).layout, { sidebarOpen: false, initialTab: 'files' });
 });
 
 test('partial and empty layouts stay with the selected source for viewer defaults', () => {
-    for (const layout of [{}, { sidebarOpen: true }, { provenancesOpen: false }]) {
+    for (const layout of [{}, { sidebarOpen: true }, { initialTab: 'provenance' }]) {
         assert.deepEqual(resolveViewerConfig({ layout }).layout, layout);
         assert.deepEqual(resolveViewerConfig({
-            layout: { sidebarOpen: true, provenancesOpen: false },
+            layout: { sidebarOpen: true, initialTab: 'provenance' },
         }, { layout }).layout, layout);
     }
 });
@@ -109,7 +110,7 @@ test('an empty bridge selects plugin mode and defaults without leaking props', (
         entryPoint: 'plugin',
         loadJson: undefined,
         showUnloadButton: true,
-        layout: { sidebarOpen: false, provenancesOpen: true },
+        layout: { sidebarOpen: false, initialTab: 'files' },
     });
 });
 

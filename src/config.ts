@@ -2,9 +2,11 @@ import { LoadError, loadCrateFromUrl, parseCrateUrl } from './util/urlLoader';
 import { loadWorkflowHubCrate, parseWorkflowHubParams } from './util/workflowHubLoader';
 
 type TextLoader = () => Promise<string>;
+export type ViewerTab = 'files' | 'provenance';
 export interface LayoutOptions {
     sidebarOpen?: boolean;
-    provenancesOpen?: boolean;
+    /** The tab that is open when ARC content mounts. A crate without a graph opens on its files. */
+    initialTab?: ViewerTab;
 }
 
 interface ViewerOptions {
@@ -78,6 +80,6 @@ export function resolveViewerConfig(
             ? bridge.getROCJson
             : entryPoint === 'showcase' ? queryLoader(search) : props.jsonString,
         showUnloadButton: options.showUnloadButton ?? true,
-        layout: options.layout ?? { sidebarOpen: false, provenancesOpen: true }
+        layout: options.layout ?? { sidebarOpen: false, initialTab: 'files' }
     };
 }
