@@ -15,7 +15,7 @@ export default function FileBreadcrumbs({ currentTreeNode, navigateTo, title = "
       <Breadcrumbs.Item
           key="root"
           href="#"
-          onClick={() => navigateTo("")}
+          onClick={(event) => { event.preventDefault(); navigateTo(""); }}
           selected={parts.length === 0}
         >
           {title}
@@ -26,7 +26,7 @@ export default function FileBreadcrumbs({ currentTreeNode, navigateTo, title = "
           <Breadcrumbs.Item
             key={path}
             href="#"
-            onClick={() => navigateTo(path)}
+            onClick={(event) => { event.preventDefault(); navigateTo(path); }}
             selected={index === parts.length - 1}
           >
             {part}

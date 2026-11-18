@@ -61,7 +61,7 @@ const mkHeader = ({navigateTo, responsiveValue}: HeaderProps) => {
         rowHeader: true,
         renderCell: (row: TreeNode) => {
           return (
-            <Link href="#" style={{color: 'inherit'}} onClick={() => navigateTo(row.id)}>
+            <Link href="#" style={{color: 'inherit'}} onClick={(event) => { event.preventDefault(); navigateTo(row.id); }}>
               <Truncate title={row.name} maxWidth="200px" expandable>{row.name}</Truncate >
             </Link>
           );
