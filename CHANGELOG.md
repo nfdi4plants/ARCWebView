@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 3.0.0 - 2026-11-18
+
 ### ✨ Added
 
 - Added support for Workflow RO-Crate and Workflow Run Crate files. The viewer detects the kind from the crate profiles and opens a single ARC workflow or run on its folder.
