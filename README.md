@@ -255,7 +255,12 @@ Run the configuration regression tests with `npm test`. The same command runs `t
 
 ## Deploy to GitHub Pages
 
-1. Deploy using `gh-pages` npm library: `npm run deploy`
+The showcase is built and published by the "Deploy to GitHub Pages" workflow. It runs only when started by hand:
+
+1. Open the repository's Actions tab and select "Deploy to GitHub Pages".
+2. Click "Run workflow" and pick the branch to deploy (usually `main`).
+
+The workflow installs the packages from `package-lock.json` with `npm ci`, runs the tests, builds the app and publishes `dist`. The Pages source in Settings -> Pages has to be "GitHub Actions".
 
 ## Build WebApp 
 
