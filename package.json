@@ -10,12 +10,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Freymaurer/ARCWebView.git"
+    "url": "git+https://github.com/nfdi4plants/ARCWebView.git"
   },
   "bugs": {
-    "url": "https://github.com/Freymaurer/ARCWebView/issues"
+    "url": "https://github.com/nfdi4plants/ARCWebView/issues"
   },
-  "homepage": "https://github.com/Freymaurer/ARCWebView#readme",
+  "homepage": "https://github.com/nfdi4plants/ARCWebView#readme",
   "keywords": [
     "react",
     "components",
