@@ -242,25 +242,24 @@ Run the configuration regression tests with `npm test`. The same command runs `t
 
 ## Publish components
 
-1. Apply changes
-2. Change version in `package.json`
-3. Build component library `npm run build:lib`
+Add a new entry to the top of `CHANGELOG.md` (below `## [Unreleased]`):
 
-> [!NOTE]  
-> Remember to login before the next step (verify with `npm whoami`).
->
-> `npm login` to authenticate your npm account before publishing.
+```markdown
+## 3.1.0 - 2026-11-25
 
-4. Publish component library `npm publish --access public` (or use `npm publish --access public --tag next` for prerelease) 
+### ✨ Added
+- ...
+```
+
+For a pre-release, use a pre-release version: `## 3.1.0-beta.1 - ...`
+
+Push to `main`. The CI workflow detects the new version, syncs `package.json` automatically, and publishes to npm. No manual `npm publish` or `npm login` needed.
 
 ## Deploy to GitHub Pages
 
-The showcase is built and published by the "Deploy to GitHub Pages" workflow. It runs only when started by hand:
+The showcase is built and deployed to GitHub Pages automatically on every push to `main`. No manual trigger is needed.
 
-1. Open the repository's Actions tab and select "Deploy to GitHub Pages".
-2. Click "Run workflow" and pick the branch to deploy (usually `main`).
-
-The workflow installs the packages from `package-lock.json` with `npm ci`, runs the tests, builds the app and publishes `dist`. The Pages source in Settings -> Pages has to be "GitHub Actions".
+The Pages source in Settings → Pages must be set to "GitHub Actions".
 
 ## Build WebApp 
 

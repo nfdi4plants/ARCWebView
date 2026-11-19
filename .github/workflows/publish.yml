@@ -1,10 +1,12 @@
-# Builds the showcase app from the lockfile and publishes it to GitHub Pages.
-# Runs only when started by hand: Actions -> "Deploy to GitHub Pages" -> "Run workflow".
-# Settings -> Pages -> Source has to be set to "GitHub Actions" for the deploy step to work.
-name: Deploy to GitHub Pages
+# Runs on every push to main.
+# Tests and GH Pages deployment always run.
+# npm publish only runs when CHANGELOG.md contains a version not yet on npm.
+name: Publish
+description: Runs tests, deploys the showcase to GitHub Pages, and publishes the npm package when the CHANGELOG version is new.
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
 
 permissions:
   contents: read
@@ -17,7 +19,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -27,8 +29,35 @@ jobs:
           node-version: 24
           cache: npm
 
-      - run: npm ci
+      - run: npm i
       - run: npm test
+
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      should_publish: ${{ steps.sync.outputs.should_publish }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - id: sync
+        run: node ci/SyncChangelogVersion.mjs
+
+  build-gh-pages:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm i
       - run: npm run build
 
       - uses: actions/configure-pages@v5
@@ -37,8 +66,25 @@ jobs:
         with:
           path: dist
 
+  publish-npm-package:
+    needs: [check-version, test]
+    if: needs.check-version.outputs.should_publish == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm i
+      - run: node ci/SyncChangelogVersion.mjs
+      - run: npm run build:lib
+      - run: npm publish --access public
+
   deploy:
-    needs: build
+    needs: build-gh-pages
     runs-on: ubuntu-latest
     environment:
       name: github-pages
